@@ -71,16 +71,36 @@ const Auth = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific error for existing user
+        if (error.message.includes("already registered") || error.message.includes("already been registered")) {
+          toast({
+            title: "Account Already Exists",
+            description: "This email is already registered. Please sign in instead.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw error;
+      }
 
-      toast({
-        title: "Success",
-        description: "Check your email for the confirmation link!",
-      });
+      // Check if user was created or already exists
+      if (data.user && !data.user.email_confirmed_at) {
+        toast({
+          title: "Check Your Email",
+          description: "Please check your email for the confirmation link.",
+        });
+      } else if (data.user) {
+        toast({
+          title: "Account Created",
+          description: "Successfully created your account!",
+        });
+        navigate("/dashboard");
+      }
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Signup Error",
+        description: error.message || "An error occurred during signup. Please try again.",
         variant: "destructive",
       });
     } finally {
