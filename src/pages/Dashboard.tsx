@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
+import { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -26,6 +27,8 @@ import {
 const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [projects, setProjects] = useState<Tables<"projects">[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,6 +40,9 @@ const Dashboard = () => {
       
       if (!session) {
         navigate("/auth");
+      } else {
+        // Fetch projects data
+        fetchProjects();
       }
     });
 
@@ -46,12 +52,36 @@ const Dashboard = () => {
         setUser(session?.user ?? null);
         if (!session) {
           navigate("/auth");
+        } else {
+          fetchProjects();
         }
       }
     );
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchProjects = async () => {
+    try {
+      setLoadingData(true);
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setProjects(data || []);
+    } catch (error: any) {
+      console.error("Error fetching projects:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load project data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -174,32 +204,37 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
               title="Active Projects"
-              value="0"
+              value={loadingData ? "..." : projects.filter(p => 
+                p.status !== "completed" && p.status !== "cancelled"
+              ).length.toString()}
               description="Projects currently in progress"
               icon={<FolderOpen className="h-5 w-5" />}
               onClick={() => navigate("/projects")}
             />
             <MetricCard
-              title="Team Members"
-              value="1"
-              description="Active team members"
-              icon={<Users className="h-5 w-5" />}
-              trend={{ value: 0, label: "from last month", isPositive: true }}
+              title="Total Projects"
+              value={loadingData ? "..." : projects.length.toString()}
+              description="All projects in organization"
+              icon={<BarChart3 className="h-5 w-5" />}
               onClick={() => navigate("/projects")}
             />
             <MetricCard
-              title="Tasks Due This Week"
-              value="0"
-              description="Upcoming deadlines"
-              icon={<Calendar className="h-5 w-5" />}
-              onClick={() => navigate("/tasks")}
+              title="Completed Projects"
+              value={loadingData ? "..." : projects.filter(p => 
+                p.status === "completed"
+              ).length.toString()}
+              description="Successfully finished projects"
+              icon={<CheckSquare className="h-5 w-5" />}
+              onClick={() => navigate("/projects")}
             />
             <MetricCard
-              title="Budget Utilization"
-              value="0%"
-              description="Average across active projects"
+              title="Total Budget"
+              value={loadingData ? "..." : `$${projects.reduce((sum, p) => 
+                sum + (p.estimated_budget || 0), 0
+              ).toLocaleString()}`}
+              description="Estimated budget across all projects"
               icon={<DollarSign className="h-5 w-5" />}
-              onClick={() => navigate("/reports")}
+              onClick={() => navigate("/projects")}
             />
           </div>
         </div>
@@ -212,26 +247,34 @@ const Dashboard = () => {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <ProgressCard
-              title="Overall Completion"
-              progress={0}
-              description="Across all active projects"
+              title="Projects by Status"
+              progress={loadingData ? 0 : Math.round(
+                (projects.filter(p => p.status === "completed").length / Math.max(projects.length, 1)) * 100
+              )}
+              description="Completion rate across all projects"
               color="primary"
               size="lg"
             />
             <ProgressCard
-              title="Budget Spent"
-              progress={0}
+              title="In Progress"
+              progress={loadingData ? 0 : Math.round(
+                (projects.filter(p => 
+                  p.status === "construction" || p.status === "design_phase"
+                ).length / Math.max(projects.length, 1)) * 100
+              )}
               target={100}
               unit="%"
-              description="Of allocated budget"
+              description="Projects actively being worked on"
               color="warning"
             />
             <ProgressCard
-              title="Team Utilization"
-              progress={0}
+              title="Planning Phase"
+              progress={loadingData ? 0 : Math.round(
+                (projects.filter(p => p.status === "planning").length / Math.max(projects.length, 1)) * 100
+              )}
               target={100}
               unit="%"
-              description="Average team capacity"
+              description="Projects in early planning stage"
               color="secondary"
             />
           </div>
