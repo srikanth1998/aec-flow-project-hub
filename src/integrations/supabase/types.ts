@@ -79,6 +79,94 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          actual_budget: number | null
+          actual_completion_date: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          estimated_budget: number | null
+          estimated_completion_date: string | null
+          id: string
+          name: string
+          organization_id: string
+          project_address: string | null
+          project_manager_id: string | null
+          project_type: Database["public"]["Enums"]["project_type"]
+          start_date: string | null
+          status: Database["public"]["Enums"]["project_status"]
+          updated_at: string
+        }
+        Insert: {
+          actual_budget?: number | null
+          actual_completion_date?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          estimated_budget?: number | null
+          estimated_completion_date?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          project_address?: string | null
+          project_manager_id?: string | null
+          project_type: Database["public"]["Enums"]["project_type"]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Update: {
+          actual_budget?: number | null
+          actual_completion_date?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          estimated_budget?: number | null
+          estimated_completion_date?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          project_address?: string | null
+          project_manager_id?: string | null
+          project_type?: Database["public"]["Enums"]["project_type"]
+          start_date?: string | null
+          status?: Database["public"]["Enums"]["project_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_project_manager_id_fkey"
+            columns: ["project_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -87,6 +175,24 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      project_status:
+        | "planning"
+        | "design_phase"
+        | "permitting"
+        | "construction"
+        | "inspection"
+        | "completed"
+        | "on_hold"
+        | "cancelled"
+      project_type:
+        | "residential_construction"
+        | "commercial_construction"
+        | "infrastructure"
+        | "renovation"
+        | "design_only"
+        | "engineering_analysis"
+        | "permit_drawings"
+        | "landscape_design"
       user_role: "admin" | "pm" | "designer" | "accountant"
     }
     CompositeTypes: {
@@ -215,6 +321,26 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      project_status: [
+        "planning",
+        "design_phase",
+        "permitting",
+        "construction",
+        "inspection",
+        "completed",
+        "on_hold",
+        "cancelled",
+      ],
+      project_type: [
+        "residential_construction",
+        "commercial_construction",
+        "infrastructure",
+        "renovation",
+        "design_only",
+        "engineering_analysis",
+        "permit_drawings",
+        "landscape_design",
+      ],
       user_role: ["admin", "pm", "designer", "accountant"],
     },
   },
