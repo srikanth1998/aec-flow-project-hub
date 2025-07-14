@@ -209,7 +209,7 @@ const Dashboard = () => {
               ).length.toString()}
               description="Projects currently in progress"
               icon={<FolderOpen className="h-5 w-5" />}
-              onClick={() => navigate("/projects")}
+              onClick={() => navigate("/projects/active")}
             />
             <MetricCard
               title="Total Projects"
@@ -225,7 +225,7 @@ const Dashboard = () => {
               ).length.toString()}
               description="Successfully finished projects"
               icon={<CheckSquare className="h-5 w-5" />}
-              onClick={() => navigate("/projects")}
+              onClick={() => navigate("/projects/completed")}
             />
             <MetricCard
               title="Total Budget"
@@ -234,7 +234,7 @@ const Dashboard = () => {
               ).toLocaleString()}`}
               description="Estimated budget across all projects"
               icon={<DollarSign className="h-5 w-5" />}
-              onClick={() => navigate("/projects")}
+              onClick={() => navigate("/budget")}
             />
           </div>
         </div>
