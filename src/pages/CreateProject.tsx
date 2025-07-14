@@ -86,11 +86,32 @@ const CreateProject = () => {
       }
 
       // Get user profile for organization info
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", session.user.id)
-        .single();
+        .maybeSingle();
+      
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        toast({
+          title: "Error",
+          description: "Unable to load user profile. Please contact an administrator.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
+
+      if (!profile) {
+        toast({
+          title: "Profile Required",
+          description: "No user profile found. Please contact an administrator to set up your account.",
+          variant: "destructive",
+        });
+        navigate("/auth");
+        return;
+      }
       
       setUserProfile(profile);
       setLoading(false);

@@ -160,7 +160,7 @@ const Dashboard = () => {
               title="Team Management"
               description="Manage team members, assign roles, and track resource allocation across projects"
               icon={<Users className="h-6 w-6" />}
-              onClick={() => navigate("/team")}
+              onClick={() => navigate("/projects")}
             />
           </div>
         </div>
@@ -185,7 +185,7 @@ const Dashboard = () => {
               description="Active team members"
               icon={<Users className="h-5 w-5" />}
               trend={{ value: 0, label: "from last month", isPositive: true }}
-              onClick={() => navigate("/team")}
+              onClick={() => navigate("/projects")}
             />
             <MetricCard
               title="Tasks Due This Week"
