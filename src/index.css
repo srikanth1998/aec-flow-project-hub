@@ -1,107 +1,51 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* AEC Project Manager Design System - All colors MUST be HSL */
-
 @layer base {
   :root {
-    /* Professional AEC Color Palette */
-    --background: 245 247 250; /* Soft gray-blue background */
-    --foreground: 15 23 42; /* Dark slate text */
-    --card: 255 255 255; /* Pure white cards */
-    --card-foreground: 15 23 42;
-    --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
-    
-    /* Primary Navy */
-    --primary: 30 58 138; /* Deep navy blue */
-    --primary-foreground: 248 250 252;
-    --primary-hover: 29 78 216; /* Lighter navy on hover */
-    
-    /* Secondary Teal */
-    --secondary: 20 184 166; /* Professional teal */
-    --secondary-foreground: 255 255 255;
-    --secondary-hover: 15 118 110; /* Darker teal on hover */
-    
-    /* Accent Coral */
-    --accent: 251 113 133; /* Vibrant coral accent */
-    --accent-foreground: 255 255 255;
-    --accent-hover: 244 63 94; /* Deeper coral on hover */
-    
-    /* Success Green */
-    --success: 34 197 94;
-    --success-foreground: 255 255 255;
-    
-    /* Warning Orange */
-    --warning: 251 146 60;
-    --warning-foreground: 255 255 255;
-    
-    /* Destructive Red */
-    --destructive: 239 68 68;
-    --destructive-foreground: 248 250 252;
-    
-    /* Neutral Grays */
-    --muted: 241 245 249; /* Light gray backgrounds */
-    --muted-foreground: 100 116 139; /* Muted text */
-    --border: 226 232 240; /* Subtle borders */
-    --input: 226 232 240; /* Input borders */
-    --ring: 30 58 138; /* Focus rings match primary */
-    
-    /* Status Colors */
-    --status-pending: 251 146 60; /* Orange */
-    --status-progress: 59 130 246; /* Blue */
-    --status-complete: 34 197 94; /* Green */
-    --status-overdue: 239 68 68; /* Red */
-    
-    /* Sidebar */
-    --sidebar-background: 255 255 255;
-    --sidebar-foreground: 15 23 42;
-    --sidebar-primary: 30 58 138;
-    --sidebar-primary-foreground: 248 250 252;
-    --sidebar-accent: 241 245 249;
-    --sidebar-accent-foreground: 15 23 42;
-    --sidebar-border: 226 232 240;
-    --sidebar-ring: 30 58 138;
-
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 15 23 42; /* Dark slate background */
-    --foreground: 248 250 252; /* Light text */
-    --card: 30 41 59; /* Dark cards */
-    --card-foreground: 248 250 252;
-    --popover: 30 41 59;
-    --popover-foreground: 248 250 252;
-    
-    --primary: 59 130 246; /* Brighter blue for dark mode */
-    --primary-foreground: 15 23 42;
-    --primary-hover: 37 99 235;
-    
-    --secondary: 45 212 191; /* Brighter teal */
-    --secondary-foreground: 15 23 42;
-    --secondary-hover: 20 184 166;
-    
-    --accent: 244 114 182; /* Adjusted coral for dark mode */
-    --accent-foreground: 15 23 42;
-    --accent-hover: 236 72 153;
-    
-    --muted: 51 65 85; /* Darker muted backgrounds */
-    --muted-foreground: 148 163 184; /* Lighter muted text */
-    --border: 51 65 85; /* Darker borders */
-    --input: 51 65 85;
-    --ring: 59 130 246;
-
-    --sidebar-background: 15 23 42;
-    --sidebar-foreground: 248 250 252;
-    --sidebar-primary: 59 130 246;
-    --sidebar-primary-foreground: 15 23 42;
-    --sidebar-accent: 51 65 85;
-    --sidebar-accent-foreground: 248 250 252;
-    --sidebar-border: 51 65 85;
-    --sidebar-ring: 59 130 246;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
   }
 }
 
@@ -109,79 +53,12 @@
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
   }
 }
 
-@layer components {
-  /* Status Badges */
-  .status-badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-  
-  .status-pending {
-    @apply bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300;
-  }
-  
-  .status-progress {
-    @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300;
-  }
-  
-  .status-complete {
-    @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300;
-  }
-  
-  .status-overdue {
-    @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300;
-  }
-
-  /* Card Hover Effects */
-  .card-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-1;
-  }
-
-  /* Interactive Cards */
-  .interactive-card {
-    @apply transition-all duration-200 hover:shadow-lg hover:-translate-y-2 hover:bg-card/80 cursor-pointer;
-  }
-
-  /* Button Ripple Effect */
-  .btn-ripple {
-    @apply relative overflow-hidden;
-  }
-  
-  .btn-ripple::after {
-    content: '';
-    @apply absolute inset-0 bg-white/20 transform scale-0 rounded-full transition-transform duration-200 pointer-events-none;
-  }
-  
-  .btn-ripple:active::after {
-    @apply scale-100;
-  }
-
-  /* Smooth Underline Animation */
-  .link-underline {
-    @apply relative;
-  }
-  
-  .link-underline::after {
-    content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 origin-bottom-right transition-transform duration-300;
-  }
-  
-  .link-underline:hover::after {
-    @apply scale-x-100 origin-bottom-left;
-  }
-
-  /* Loading Skeleton */
-  .skeleton {
-    @apply animate-pulse bg-muted rounded;
-  }
-
-  /* Glass Effect */
-  .glass {
-    @apply backdrop-blur-md bg-white/80 dark:bg-gray-900/80 border border-white/20;
-  }
+/* Glass effect for modern cards */
+.glass {
+  @apply backdrop-blur-sm bg-white/10 border border-white/20;
 }
