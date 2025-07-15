@@ -52,6 +52,16 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
   const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingColumn, setEditingColumn] = useState<string | null>(null);
+  const [columnNames, setColumnNames] = useState({
+    name: "Task Name",
+    status: "Status",
+    estimated_hours: "Est. Hours",
+    actual_hours: "Actual Hours",
+    estimated_cost: "Est. Cost",
+    actual_cost: "Actual Cost",
+    assigned_user: "Assigned User",
+  });
   const [newRow, setNewRow] = useState({
     name: "",
     status: "pending",
@@ -295,13 +305,153 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-[200px]">Task Name</TableHead>
-              <TableHead className="w-[120px]">Status</TableHead>
-              <TableHead className="w-[100px]">Est. Hours</TableHead>
-              <TableHead className="w-[100px]">Actual Hours</TableHead>
-              <TableHead className="w-[120px]">Est. Cost</TableHead>
-              <TableHead className="w-[120px]">Actual Cost</TableHead>
-              <TableHead className="w-[150px]">Assigned User</TableHead>
+              <TableHead className="w-[200px]">
+                {editingColumn === 'name' ? (
+                  <Input
+                    value={columnNames.name}
+                    onChange={(e) => setColumnNames({ ...columnNames, name: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('name')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.name}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[120px]">
+                {editingColumn === 'status' ? (
+                  <Input
+                    value={columnNames.status}
+                    onChange={(e) => setColumnNames({ ...columnNames, status: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('status')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.status}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[100px]">
+                {editingColumn === 'estimated_hours' ? (
+                  <Input
+                    value={columnNames.estimated_hours}
+                    onChange={(e) => setColumnNames({ ...columnNames, estimated_hours: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('estimated_hours')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.estimated_hours}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[100px]">
+                {editingColumn === 'actual_hours' ? (
+                  <Input
+                    value={columnNames.actual_hours}
+                    onChange={(e) => setColumnNames({ ...columnNames, actual_hours: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('actual_hours')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.actual_hours}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[120px]">
+                {editingColumn === 'estimated_cost' ? (
+                  <Input
+                    value={columnNames.estimated_cost}
+                    onChange={(e) => setColumnNames({ ...columnNames, estimated_cost: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('estimated_cost')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.estimated_cost}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[120px]">
+                {editingColumn === 'actual_cost' ? (
+                  <Input
+                    value={columnNames.actual_cost}
+                    onChange={(e) => setColumnNames({ ...columnNames, actual_cost: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('actual_cost')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.actual_cost}
+                  </div>
+                )}
+              </TableHead>
+              <TableHead className="w-[150px]">
+                {editingColumn === 'assigned_user' ? (
+                  <Input
+                    value={columnNames.assigned_user}
+                    onChange={(e) => setColumnNames({ ...columnNames, assigned_user: e.target.value })}
+                    onBlur={() => setEditingColumn(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') setEditingColumn(null);
+                    }}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+                    autoFocus
+                  />
+                ) : (
+                  <div 
+                    onClick={() => setEditingColumn('assigned_user')}
+                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
+                  >
+                    {columnNames.assigned_user}
+                  </div>
+                )}
+              </TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
