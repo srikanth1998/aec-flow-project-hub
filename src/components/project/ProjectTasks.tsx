@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Clock, DollarSign, User, Edit, Save, X, CheckSquare } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Plus, Save, X, Trash2 } from "lucide-react";
 
 interface ProjectTasksProps {
   projectId: string;
@@ -53,21 +51,17 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showNewTaskForm, setShowNewTaskForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<string | null>(null);
-  const [newTask, setNewTask] = useState({
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [newRow, setNewRow] = useState({
     name: "",
-    description: "",
+    status: "pending",
     estimated_hours: "",
+    actual_hours: "",
     estimated_cost: "",
+    actual_cost: "",
+    assigned_user: "",
   });
-  const [newAssignment, setNewAssignment] = useState({
-    taskId: "",
-    userId: "",
-    hours: "",
-    cost: "",
-    notes: "",
-  });
+  const [isAddingRow, setIsAddingRow] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -141,7 +135,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
   };
 
   const handleCreateTask = async () => {
-    if (!newTask.name.trim() || !currentUserProfile) return;
+    if (!newRow.name.trim() || !currentUserProfile) return;
 
     try {
       const { data: projectData } = await supabase
@@ -154,18 +148,45 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
         .from("tasks")
         .insert({
           project_id: projectId,
-          name: newTask.name,
-          description: newTask.description,
-          estimated_hours: newTask.estimated_hours ? parseFloat(newTask.estimated_hours) : null,
-          estimated_cost: newTask.estimated_cost ? parseFloat(newTask.estimated_cost) : null,
+          name: newRow.name,
+          status: newRow.status,
+          estimated_hours: newRow.estimated_hours ? parseFloat(newRow.estimated_hours) : null,
+          actual_hours: newRow.actual_hours ? parseFloat(newRow.actual_hours) : null,
+          estimated_cost: newRow.estimated_cost ? parseFloat(newRow.estimated_cost) : null,
+          actual_cost: newRow.actual_cost ? parseFloat(newRow.actual_cost) : null,
           created_by: currentUserProfile.id,
           organization_id: projectData?.organization_id,
         });
 
       if (error) throw error;
 
-      setNewTask({ name: "", description: "", estimated_hours: "", estimated_cost: "" });
-      setShowNewTaskForm(false);
+      // Add task assignment if user is selected
+      if (newRow.assigned_user && newRow.actual_hours) {
+        await supabase
+          .from("task_assignments")
+          .insert({
+            task_id: (await supabase
+              .from("tasks")
+              .select("id")
+              .eq("name", newRow.name)
+              .eq("project_id", projectId)
+              .single()).data?.id,
+            user_id: newRow.assigned_user,
+            hours_spent: parseFloat(newRow.actual_hours),
+            cost_incurred: newRow.actual_cost ? parseFloat(newRow.actual_cost) : 0,
+          });
+      }
+
+      setNewRow({
+        name: "",
+        status: "pending",
+        estimated_hours: "",
+        actual_hours: "",
+        estimated_cost: "",
+        actual_cost: "",
+        assigned_user: "",
+      });
+      setIsAddingRow(false);
       fetchTasks();
       toast({
         title: "Success",
@@ -181,33 +202,55 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
     }
   };
 
-  const handleAddAssignment = async (taskId: string) => {
-    if (!newAssignment.userId || !newAssignment.hours) return;
-
+  const handleUpdateTask = async (taskId: string, field: string, value: string) => {
     try {
+      const updateData: any = {};
+      
+      if (field === 'estimated_hours' || field === 'actual_hours') {
+        updateData[field] = value ? parseFloat(value) : null;
+      } else if (field === 'estimated_cost' || field === 'actual_cost') {
+        updateData[field] = value ? parseFloat(value) : null;
+      } else {
+        updateData[field] = value;
+      }
+
       const { error } = await supabase
-        .from("task_assignments")
-        .insert({
-          task_id: taskId,
-          user_id: newAssignment.userId,
-          hours_spent: parseFloat(newAssignment.hours),
-          cost_incurred: newAssignment.cost ? parseFloat(newAssignment.cost) : 0,
-          notes: newAssignment.notes,
-        });
+        .from("tasks")
+        .update(updateData)
+        .eq("id", taskId);
 
       if (error) throw error;
 
-      setNewAssignment({ taskId: "", userId: "", hours: "", cost: "", notes: "" });
+      fetchTasks();
+    } catch (error) {
+      console.error("Error updating task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update task. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+
       fetchTasks();
       toast({
         title: "Success",
-        description: "Time entry added successfully.",
+        description: "Task deleted successfully.",
       });
     } catch (error) {
-      console.error("Error adding assignment:", error);
+      console.error("Error deleting task:", error);
       toast({
         title: "Error",
-        description: "Failed to add time entry. Please try again.",
+        description: "Failed to delete task. Please try again.",
         variant: "destructive",
       });
     }
@@ -242,146 +285,182 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Tasks</h2>
-        <Button onClick={() => setShowNewTaskForm(true)}>
+        <Button onClick={() => setIsAddingRow(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Task
         </Button>
       </div>
 
-      {showNewTaskForm && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Create New Task</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="taskName">Task Name</Label>
-              <Input
-                id="taskName"
-                value={newTask.name}
-                onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
-                placeholder="Enter task name"
-              />
-            </div>
-            <div>
-              <Label htmlFor="taskDescription">Description</Label>
-              <Textarea
-                id="taskDescription"
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                placeholder="Enter task description"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="estimatedHours">Estimated Hours</Label>
-                <Input
-                  id="estimatedHours"
-                  type="number"
-                  step="0.5"
-                  value={newTask.estimated_hours}
-                  onChange={(e) => setNewTask({ ...newTask, estimated_hours: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label htmlFor="estimatedCost">Estimated Cost</Label>
-                <Input
-                  id="estimatedCost"
-                  type="number"
-                  step="0.01"
-                  value={newTask.estimated_cost}
-                  onChange={(e) => setNewTask({ ...newTask, estimated_cost: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleCreateTask}>
-                <Save className="h-4 w-4 mr-2" />
-                Create Task
-              </Button>
-              <Button variant="outline" onClick={() => setShowNewTaskForm(false)}>
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="space-y-4">
-        {tasks.map((task) => (
-          <Card key={task.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{task.name}</CardTitle>
-                  <Badge variant={getStatusColor(task.status)} className="mt-2">
-                    {task.status.replace('_', ' ').toUpperCase()}
-                  </Badge>
-                </div>
-                <Button variant="ghost" size="sm">
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </div>
-              {task.description && (
-                <p className="text-muted-foreground">{task.description}</p>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {task.actual_hours || 0}h / {task.estimated_hours || 0}h
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    ${task.actual_cost || 0} / ${task.estimated_cost || 0}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {task.task_assignments?.length || 0} assignee(s)
-                  </span>
-                </div>
-              </div>
-
-              {task.task_assignments && task.task_assignments.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-semibold mb-2">Time Entries</h4>
-                  <div className="space-y-2">
-                    {task.task_assignments.map((assignment) => (
-                      <div key={assignment.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                        <div>
-                          <span className="font-medium">
-                            {assignment.profiles.first_name} {assignment.profiles.last_name}
-                          </span>
-                          <span className="text-sm text-muted-foreground ml-2">
-                            {assignment.hours_spent}h • ${assignment.cost_incurred}
-                          </span>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(assignment.date_worked).toLocaleDateString()}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t pt-4">
-                <h4 className="font-semibold mb-2">Add Time Entry</h4>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+      <div className="border rounded-lg overflow-hidden bg-background">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="w-[200px]">Task Name</TableHead>
+              <TableHead className="w-[120px]">Status</TableHead>
+              <TableHead className="w-[100px]">Est. Hours</TableHead>
+              <TableHead className="w-[100px]">Actual Hours</TableHead>
+              <TableHead className="w-[120px]">Est. Cost</TableHead>
+              <TableHead className="w-[120px]">Actual Cost</TableHead>
+              <TableHead className="w-[150px]">Assigned User</TableHead>
+              <TableHead className="w-[100px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tasks.map((task) => {
+              const assignedUser = task.task_assignments?.[0]?.profiles;
+              const totalHours = task.task_assignments?.reduce((sum, assignment) => sum + (assignment.hours_spent || 0), 0) || 0;
+              const totalCost = task.task_assignments?.reduce((sum, assignment) => sum + (assignment.cost_incurred || 0), 0) || 0;
+              
+              return (
+                <TableRow key={task.id} className="hover:bg-muted/30">
+                  <TableCell>
+                    <Input
+                      value={task.name}
+                      onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)}
+                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                      onBlur={() => setEditingTaskId(null)}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Select
+                      value={task.status}
+                      onValueChange={(value) => handleUpdateTask(task.id, 'status', value)}
+                    >
+                      <SelectTrigger className="border-0 bg-transparent h-auto p-0 focus:ring-0">
+                        <SelectValue>
+                          <Badge variant={getStatusColor(task.status)} className="text-xs">
+                            {task.status.replace('_', ' ')}
+                          </Badge>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.5"
+                      value={task.estimated_hours || ""}
+                      onChange={(e) => handleUpdateTask(task.id, 'estimated_hours', e.target.value)}
+                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-20"
+                      placeholder="0"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm font-medium">{totalHours}h</span>
+                  </TableCell>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={task.estimated_cost || ""}
+                      onChange={(e) => handleUpdateTask(task.id, 'estimated_cost', e.target.value)}
+                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-24"
+                      placeholder="0.00"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm font-medium">${totalCost}</span>
+                  </TableCell>
+                  <TableCell>
+                    {assignedUser ? (
+                      <span className="text-sm">
+                        {assignedUser.first_name} {assignedUser.last_name}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Unassigned</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            
+            {isAddingRow && (
+              <TableRow className="bg-muted/20">
+                <TableCell>
+                  <Input
+                    value={newRow.name}
+                    onChange={(e) => setNewRow({ ...newRow, name: e.target.value })}
+                    placeholder="Enter task name"
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1"
+                    autoFocus
+                  />
+                </TableCell>
+                <TableCell>
                   <Select
-                    value={newAssignment.taskId === task.id ? newAssignment.userId : ""}
-                    onValueChange={(value) => setNewAssignment({ ...newAssignment, taskId: task.id, userId: value })}
+                    value={newRow.status}
+                    onValueChange={(value) => setNewRow({ ...newRow, status: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="border-0 bg-transparent h-auto p-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={newRow.estimated_hours}
+                    onChange={(e) => setNewRow({ ...newRow, estimated_hours: e.target.value })}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
+                    placeholder="0"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={newRow.actual_hours}
+                    onChange={(e) => setNewRow({ ...newRow, actual_hours: e.target.value })}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
+                    placeholder="0"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newRow.estimated_cost}
+                    onChange={(e) => setNewRow({ ...newRow, estimated_cost: e.target.value })}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-24"
+                    placeholder="0.00"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={newRow.actual_cost}
+                    onChange={(e) => setNewRow({ ...newRow, actual_cost: e.target.value })}
+                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-24"
+                    placeholder="0.00"
+                  />
+                </TableCell>
+                <TableCell>
+                  <Select
+                    value={newRow.assigned_user}
+                    onValueChange={(value) => setNewRow({ ...newRow, assigned_user: value })}
+                  >
+                    <SelectTrigger className="border-0 bg-transparent h-auto p-0">
                       <SelectValue placeholder="Select user" />
                     </SelectTrigger>
                     <SelectContent>
@@ -392,46 +471,57 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    placeholder="Hours"
-                    value={newAssignment.taskId === task.id ? newAssignment.hours : ""}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, taskId: task.id, hours: e.target.value })}
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Cost"
-                    value={newAssignment.taskId === task.id ? newAssignment.cost : ""}
-                    onChange={(e) => setNewAssignment({ ...newAssignment, taskId: task.id, cost: e.target.value })}
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleAddAssignment(task.id)}
-                    disabled={!newAssignment.userId || !newAssignment.hours || newAssignment.taskId !== task.id}
-                  >
-                    Add Entry
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {tasks.length === 0 && (
-          <div className="text-center py-8">
-            <CheckSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No tasks yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Create your first task to start tracking work and progress.
-            </p>
-            <Button onClick={() => setShowNewTaskForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add First Task
-            </Button>
-          </div>
-        )}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCreateTask}
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      disabled={!newRow.name.trim()}
+                    >
+                      <Save className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setIsAddingRow(false);
+                        setNewRow({
+                          name: "",
+                          status: "pending",
+                          estimated_hours: "",
+                          actual_hours: "",
+                          estimated_cost: "",
+                          actual_cost: "",
+                          assigned_user: "",
+                        });
+                      }}
+                      className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+            
+            {tasks.length === 0 && !isAddingRow && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center py-8">
+                  <div className="text-muted-foreground">
+                    <p className="mb-2">No tasks yet</p>
+                    <Button variant="outline" onClick={() => setIsAddingRow(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add First Task
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
