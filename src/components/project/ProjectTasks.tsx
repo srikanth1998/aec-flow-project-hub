@@ -328,6 +328,9 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             className="cursor-pointer hover:bg-muted/20 p-1 rounded flex-1"
           >
             {label}
+            {canDeleteColumn(key) && (
+              <span className="text-xs text-muted-foreground ml-1">(hover to delete)</span>
+            )}
           </div>
         )}
         {canDeleteColumn(key) && (
@@ -335,7 +338,8 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             variant="ghost"
             size="sm"
             onClick={() => deleteCustomColumn(key)}
-            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive ml-1"
+            className="h-6 w-6 p-0 opacity-50 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground ml-1 transition-all"
+            title="Delete column"
           >
             <X className="h-3 w-3" />
           </Button>
