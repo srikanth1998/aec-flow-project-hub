@@ -345,9 +345,6 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             className="cursor-pointer hover:bg-muted/20 p-1 rounded flex-1"
           >
             {label}
-            {canDeleteColumn(key) && (
-              <span className="text-xs text-muted-foreground ml-1">(hover to delete)</span>
-            )}
           </div>
         )}
         {canDeleteColumn(key) && (
