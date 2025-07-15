@@ -62,7 +62,10 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
     actual_cost: "Actual Cost",
     assigned_user: "Assigned User",
   });
-  const [newRow, setNewRow] = useState({
+  const [customColumns, setCustomColumns] = useState<Array<{id: string, name: string, type: 'text' | 'number' | 'select'}>>([]);
+  const [newColumnName, setNewColumnName] = useState("");
+  const [showAddColumn, setShowAddColumn] = useState(false);
+  const [newRow, setNewRow] = useState<any>({
     name: "",
     status: "pending",
     estimated_hours: "",
@@ -187,7 +190,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
           });
       }
 
-      setNewRow({
+      const resetRow: any = {
         name: "",
         status: "pending",
         estimated_hours: "",
@@ -195,7 +198,11 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
         estimated_cost: "",
         actual_cost: "",
         assigned_user: "",
+      };
+      customColumns.forEach(col => {
+        resetRow[col.id] = "";
       });
+      setNewRow(resetRow);
       setIsAddingRow(false);
       fetchTasks();
       toast({
@@ -266,6 +273,77 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
     }
   };
 
+  const addCustomColumn = () => {
+    if (!newColumnName.trim()) return;
+    
+    const newColumn = {
+      id: `custom_${Date.now()}`,
+      name: newColumnName,
+      type: 'text' as const
+    };
+    
+    setCustomColumns([...customColumns, newColumn]);
+    setNewRow({ ...newRow, [newColumn.id]: "" });
+    setNewColumnName("");
+    setShowAddColumn(false);
+  };
+
+  const deleteCustomColumn = (columnId: string) => {
+    setCustomColumns(customColumns.filter(col => col.id !== columnId));
+    const updatedNewRow = { ...newRow };
+    delete updatedNewRow[columnId];
+    setNewRow(updatedNewRow);
+  };
+
+  const canDeleteColumn = (columnKey: string) => {
+    const coreColumns = ['name', 'status', 'estimated_hours', 'actual_hours', 'estimated_cost', 'actual_cost', 'assigned_user'];
+    return !coreColumns.includes(columnKey);
+  };
+
+  const renderColumnHeader = (key: string, label: string, width: string) => (
+    <TableHead key={key} className={width}>
+      <div className="flex items-center justify-between group">
+        {editingColumn === key ? (
+          <Input
+            value={key.startsWith('custom_') ? customColumns.find(col => col.id === key)?.name || label : columnNames[key as keyof typeof columnNames]}
+            onChange={(e) => {
+              if (key.startsWith('custom_')) {
+                setCustomColumns(customColumns.map(col => 
+                  col.id === key ? { ...col, name: e.target.value } : col
+                ));
+              } else {
+                setColumnNames({ ...columnNames, [key]: e.target.value });
+              }
+            }}
+            onBlur={() => setEditingColumn(null)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setEditingColumn(null);
+            }}
+            className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
+            autoFocus
+          />
+        ) : (
+          <div 
+            onClick={() => setEditingColumn(key)}
+            className="cursor-pointer hover:bg-muted/20 p-1 rounded flex-1"
+          >
+            {label}
+          </div>
+        )}
+        {canDeleteColumn(key) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => deleteCustomColumn(key)}
+            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive ml-1"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        )}
+      </div>
+    </TableHead>
+  );
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "completed":
@@ -295,163 +373,66 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Tasks</h2>
-        <Button onClick={() => setIsAddingRow(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Task
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowAddColumn(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Column
+          </Button>
+          <Button onClick={() => setIsAddingRow(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
       </div>
+
+      {showAddColumn && (
+        <div className="mb-4 p-4 border rounded-lg bg-muted/20">
+          <div className="flex items-center gap-2">
+            <Input
+              value={newColumnName}
+              onChange={(e) => setNewColumnName(e.target.value)}
+              placeholder="Enter column name"
+              className="max-w-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') addCustomColumn();
+                if (e.key === 'Escape') {
+                  setShowAddColumn(false);
+                  setNewColumnName("");
+                }
+              }}
+              autoFocus
+            />
+            <Button size="sm" onClick={addCustomColumn} disabled={!newColumnName.trim()}>
+              <Save className="h-4 w-4 mr-1" />
+              Add
+            </Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => {
+                setShowAddColumn(false);
+                setNewColumnName("");
+              }}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className="border rounded-lg overflow-hidden bg-background">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-[200px]">
-                {editingColumn === 'name' ? (
-                  <Input
-                    value={columnNames.name}
-                    onChange={(e) => setColumnNames({ ...columnNames, name: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('name')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.name}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[120px]">
-                {editingColumn === 'status' ? (
-                  <Input
-                    value={columnNames.status}
-                    onChange={(e) => setColumnNames({ ...columnNames, status: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('status')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.status}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[100px]">
-                {editingColumn === 'estimated_hours' ? (
-                  <Input
-                    value={columnNames.estimated_hours}
-                    onChange={(e) => setColumnNames({ ...columnNames, estimated_hours: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('estimated_hours')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.estimated_hours}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[100px]">
-                {editingColumn === 'actual_hours' ? (
-                  <Input
-                    value={columnNames.actual_hours}
-                    onChange={(e) => setColumnNames({ ...columnNames, actual_hours: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('actual_hours')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.actual_hours}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[120px]">
-                {editingColumn === 'estimated_cost' ? (
-                  <Input
-                    value={columnNames.estimated_cost}
-                    onChange={(e) => setColumnNames({ ...columnNames, estimated_cost: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('estimated_cost')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.estimated_cost}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[120px]">
-                {editingColumn === 'actual_cost' ? (
-                  <Input
-                    value={columnNames.actual_cost}
-                    onChange={(e) => setColumnNames({ ...columnNames, actual_cost: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('actual_cost')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.actual_cost}
-                  </div>
-                )}
-              </TableHead>
-              <TableHead className="w-[150px]">
-                {editingColumn === 'assigned_user' ? (
-                  <Input
-                    value={columnNames.assigned_user}
-                    onChange={(e) => setColumnNames({ ...columnNames, assigned_user: e.target.value })}
-                    onBlur={() => setEditingColumn(null)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') setEditingColumn(null);
-                    }}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 font-semibold"
-                    autoFocus
-                  />
-                ) : (
-                  <div 
-                    onClick={() => setEditingColumn('assigned_user')}
-                    className="cursor-pointer hover:bg-muted/20 p-1 rounded"
-                  >
-                    {columnNames.assigned_user}
-                  </div>
-                )}
-              </TableHead>
+              {renderColumnHeader('name', columnNames.name, 'w-[200px]')}
+              {renderColumnHeader('status', columnNames.status, 'w-[120px]')}
+              {renderColumnHeader('estimated_hours', columnNames.estimated_hours, 'w-[100px]')}
+              {renderColumnHeader('actual_hours', columnNames.actual_hours, 'w-[100px]')}
+              {renderColumnHeader('estimated_cost', columnNames.estimated_cost, 'w-[120px]')}
+              {renderColumnHeader('actual_cost', columnNames.actual_cost, 'w-[120px]')}
+              {renderColumnHeader('assigned_user', columnNames.assigned_user, 'w-[150px]')}
+              {customColumns.map(col => renderColumnHeader(col.id, col.name, 'w-[120px]'))}
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -525,6 +506,17 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                       <span className="text-muted-foreground text-sm">Unassigned</span>
                     )}
                   </TableCell>
+                  {customColumns.map(col => (
+                    <TableCell key={col.id}>
+                      <Input
+                        value={(task as any)[col.id] || ""}
+                        onChange={(e) => handleUpdateTask(task.id, col.id, e.target.value)}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-24"
+                        placeholder={col.type === 'number' ? '0' : 'Enter value'}
+                        type={col.type === 'number' ? 'number' : 'text'}
+                      />
+                    </TableCell>
+                  ))}
                   <TableCell>
                     <Button
                       variant="ghost"
@@ -622,6 +614,17 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                     </SelectContent>
                   </Select>
                 </TableCell>
+                {customColumns.map(col => (
+                  <TableCell key={col.id}>
+                    <Input
+                      value={newRow[col.id] || ""}
+                      onChange={(e) => setNewRow({ ...newRow, [col.id]: e.target.value })}
+                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-24"
+                      placeholder={col.type === 'number' ? '0' : 'Enter value'}
+                      type={col.type === 'number' ? 'number' : 'text'}
+                    />
+                  </TableCell>
+                ))}
                 <TableCell>
                   <div className="flex gap-1">
                     <Button
@@ -638,7 +641,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                       size="sm"
                       onClick={() => {
                         setIsAddingRow(false);
-                        setNewRow({
+                        const resetRow: any = {
                           name: "",
                           status: "pending",
                           estimated_hours: "",
@@ -646,7 +649,11 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                           estimated_cost: "",
                           actual_cost: "",
                           assigned_user: "",
+                        };
+                        customColumns.forEach(col => {
+                          resetRow[col.id] = "";
                         });
+                        setNewRow(resetRow);
                       }}
                       className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive"
                     >
@@ -659,7 +666,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             
             {tasks.length === 0 && !isAddingRow && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8">
+                <TableCell colSpan={8 + customColumns.length} className="text-center py-8">
                   <div className="text-muted-foreground">
                     <p className="mb-2">No tasks yet</p>
                     <Button variant="outline" onClick={() => setIsAddingRow(true)}>
