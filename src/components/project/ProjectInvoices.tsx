@@ -205,6 +205,8 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       if (service) {
         updatedItems[index].description = service.name;
         updatedItems[index].unit_price = service.unit_price;
+        updatedItems[index].total_price = 
+          updatedItems[index].quantity * service.unit_price;
       }
     }
 
