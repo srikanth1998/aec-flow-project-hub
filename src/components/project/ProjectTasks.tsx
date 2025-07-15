@@ -296,8 +296,25 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
   };
 
   const canDeleteColumn = (columnKey: string) => {
-    const coreColumns = ['name', 'status', 'estimated_hours', 'actual_hours', 'estimated_cost', 'actual_cost', 'assigned_user'];
-    return !coreColumns.includes(columnKey);
+    // Only keep task name and actions as non-deletable
+    const protectedColumns = ['name', 'actions'];
+    return !protectedColumns.includes(columnKey);
+  };
+
+  const deleteColumn = (columnKey: string) => {
+    if (columnKey.startsWith('custom_')) {
+      deleteCustomColumn(columnKey);
+    } else {
+      // Delete core column by removing it from columnNames
+      const newColumnNames = { ...columnNames };
+      delete newColumnNames[columnKey as keyof typeof columnNames];
+      setColumnNames(newColumnNames);
+      
+      // Also remove from newRow if it exists
+      const updatedNewRow = { ...newRow };
+      delete updatedNewRow[columnKey];
+      setNewRow(updatedNewRow);
+    }
   };
 
   const renderColumnHeader = (key: string, label: string, width: string) => (
@@ -337,7 +354,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => deleteCustomColumn(key)}
+            onClick={() => deleteColumn(key)}
             className="h-6 w-6 p-0 opacity-50 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground ml-1 transition-all"
             title="Delete column"
           >
@@ -429,13 +446,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              {renderColumnHeader('name', columnNames.name, 'w-[200px]')}
-              {renderColumnHeader('status', columnNames.status, 'w-[120px]')}
-              {renderColumnHeader('estimated_hours', columnNames.estimated_hours, 'w-[100px]')}
-              {renderColumnHeader('actual_hours', columnNames.actual_hours, 'w-[100px]')}
-              {renderColumnHeader('estimated_cost', columnNames.estimated_cost, 'w-[120px]')}
-              {renderColumnHeader('actual_cost', columnNames.actual_cost, 'w-[120px]')}
-              {renderColumnHeader('assigned_user', columnNames.assigned_user, 'w-[150px]')}
+              {Object.entries(columnNames).map(([key, label]) => renderColumnHeader(key, label, 'w-[120px]'))}
               {customColumns.map(col => renderColumnHeader(col.id, col.name, 'w-[120px]'))}
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
@@ -448,68 +459,98 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
               
               return (
                 <TableRow key={task.id} className="hover:bg-muted/30">
-                  <TableCell>
-                    <Input
-                      value={task.name}
-                      onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)}
-                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
-                      onBlur={() => setEditingTaskId(null)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select
-                      value={task.status}
-                      onValueChange={(value) => handleUpdateTask(task.id, 'status', value)}
-                    >
-                      <SelectTrigger className="border-0 bg-transparent h-auto p-0 focus:ring-0">
-                        <SelectValue>
-                          <Badge variant={getStatusColor(task.status)} className="text-xs">
-                            {task.status.replace('_', ' ')}
-                          </Badge>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      step="0.5"
-                      value={task.estimated_hours || ""}
-                      onChange={(e) => handleUpdateTask(task.id, 'estimated_hours', e.target.value)}
-                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-20"
-                      placeholder="0"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-medium">{totalHours}h</span>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={task.estimated_cost || ""}
-                      onChange={(e) => handleUpdateTask(task.id, 'estimated_cost', e.target.value)}
-                      className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-24"
-                      placeholder="0.00"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm font-medium">${totalCost}</span>
-                  </TableCell>
-                  <TableCell>
-                    {assignedUser ? (
-                      <span className="text-sm">
-                        {assignedUser.first_name} {assignedUser.last_name}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Unassigned</span>
-                    )}
-                  </TableCell>
+                  {Object.entries(columnNames).map(([key, label]) => {
+                    if (key === 'name') {
+                      return (
+                        <TableCell key={key}>
+                          <Input
+                            value={task.name}
+                            onChange={(e) => handleUpdateTask(task.id, 'name', e.target.value)}
+                            className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                            onBlur={() => setEditingTaskId(null)}
+                          />
+                        </TableCell>
+                      );
+                    }
+                    if (key === 'status') {
+                      return (
+                        <TableCell key={key}>
+                          <Select
+                            value={task.status}
+                            onValueChange={(value) => handleUpdateTask(task.id, 'status', value)}
+                          >
+                            <SelectTrigger className="border-0 bg-transparent h-auto p-0 focus:ring-0">
+                              <SelectValue>
+                                <Badge variant={getStatusColor(task.status)} className="text-xs">
+                                  {task.status.replace('_', ' ')}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="completed">Completed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      );
+                    }
+                    if (key === 'estimated_hours' || key === 'estimated_cost') {
+                      const taskValue = key === 'estimated_hours' ? task.estimated_hours : task.estimated_cost;
+                      return (
+                        <TableCell key={key}>
+                          <Input
+                            type="number"
+                            step={key === 'estimated_cost' ? "0.01" : "0.5"}
+                            value={taskValue || ""}
+                            onChange={(e) => handleUpdateTask(task.id, key, e.target.value)}
+                            className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-20"
+                            placeholder={key === 'estimated_cost' ? "0.00" : "0"}
+                          />
+                        </TableCell>
+                      );
+                    }
+                    if (key === 'actual_hours') {
+                      const totalHours = task.task_assignments?.reduce((sum, assignment) => sum + (assignment.hours_spent || 0), 0) || 0;
+                      return (
+                        <TableCell key={key}>
+                          <span className="text-sm font-medium">{totalHours}h</span>
+                        </TableCell>
+                      );
+                    }
+                    if (key === 'actual_cost') {
+                      const totalCost = task.task_assignments?.reduce((sum, assignment) => sum + (assignment.cost_incurred || 0), 0) || 0;
+                      return (
+                        <TableCell key={key}>
+                          <span className="text-sm font-medium">${totalCost}</span>
+                        </TableCell>
+                      );
+                    }
+                    if (key === 'assigned_user') {
+                      const assignedUser = task.task_assignments?.[0]?.profiles;
+                      return (
+                        <TableCell key={key}>
+                          {assignedUser ? (
+                            <span className="text-sm">
+                              {assignedUser.first_name} {assignedUser.last_name}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Unassigned</span>
+                          )}
+                        </TableCell>
+                      );
+                    }
+                    return (
+                      <TableCell key={key}>
+                        <Input
+                          value={(task as any)[key] || ""}
+                          onChange={(e) => handleUpdateTask(task.id, key, e.target.value)}
+                          className="border-0 bg-transparent p-0 h-auto focus-visible:ring-0 w-20"
+                          placeholder="Enter value"
+                        />
+                      </TableCell>
+                    );
+                  })}
                   {customColumns.map(col => (
                     <TableCell key={col.id}>
                       <Input
@@ -537,87 +578,51 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             
             {isAddingRow && (
               <TableRow className="bg-muted/20">
-                <TableCell>
-                  <Input
-                    value={newRow.name}
-                    onChange={(e) => setNewRow({ ...newRow, name: e.target.value })}
-                    placeholder="Enter task name"
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1"
-                    autoFocus
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={newRow.status}
-                    onValueChange={(value) => setNewRow({ ...newRow, status: value })}
-                  >
-                    <SelectTrigger className="border-0 bg-transparent h-auto p-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={newRow.estimated_hours}
-                    onChange={(e) => setNewRow({ ...newRow, estimated_hours: e.target.value })}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
-                    placeholder="0"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    step="0.5"
-                    value={newRow.actual_hours}
-                    onChange={(e) => setNewRow({ ...newRow, actual_hours: e.target.value })}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
-                    placeholder="0"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newRow.estimated_cost}
-                    onChange={(e) => setNewRow({ ...newRow, estimated_cost: e.target.value })}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-24"
-                    placeholder="0.00"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={newRow.actual_cost}
-                    onChange={(e) => setNewRow({ ...newRow, actual_cost: e.target.value })}
-                    className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-24"
-                    placeholder="0.00"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Select
-                    value={newRow.assigned_user}
-                    onValueChange={(value) => setNewRow({ ...newRow, assigned_user: value })}
-                  >
-                    <SelectTrigger className="border-0 bg-transparent h-auto p-0">
-                      <SelectValue placeholder="Select user" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.id}>
-                          {profile.first_name} {profile.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
+                {Object.entries(columnNames).map(([key, label]) => (
+                  <TableCell key={key}>
+                    {key === 'status' ? (
+                      <Select
+                        value={newRow.status}
+                        onValueChange={(value) => setNewRow({ ...newRow, status: value })}
+                      >
+                        <SelectTrigger className="border-0 bg-transparent h-auto p-0">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : key === 'assigned_user' ? (
+                      <Select
+                        value={newRow.assigned_user}
+                        onValueChange={(value) => setNewRow({ ...newRow, assigned_user: value })}
+                      >
+                        <SelectTrigger className="border-0 bg-transparent h-auto p-0">
+                          <SelectValue placeholder="Select user" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {profiles.map((profile) => (
+                            <SelectItem key={profile.id} value={profile.id}>
+                              {profile.first_name} {profile.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input
+                        value={newRow[key] || ""}
+                        onChange={(e) => setNewRow({ ...newRow, [key]: e.target.value })}
+                        placeholder={key === 'name' ? "Enter task name" : key.includes('cost') ? "0.00" : "0"}
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
+                        autoFocus={key === 'name'}
+                        type={key.includes('hours') || key.includes('cost') ? "number" : "text"}
+                        step={key.includes('cost') ? "0.01" : "0.5"}
+                      />
+                    )}
+                  </TableCell>
+                ))}
                 {customColumns.map(col => (
                   <TableCell key={col.id}>
                     <Input
@@ -636,7 +641,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                       size="sm"
                       onClick={handleCreateTask}
                       className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-                      disabled={!newRow.name.trim()}
+                      disabled={!newRow.name?.trim()}
                     >
                       <Save className="h-3 w-3" />
                     </Button>
@@ -645,15 +650,10 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                       size="sm"
                       onClick={() => {
                         setIsAddingRow(false);
-                        const resetRow: any = {
-                          name: "",
-                          status: "pending",
-                          estimated_hours: "",
-                          actual_hours: "",
-                          estimated_cost: "",
-                          actual_cost: "",
-                          assigned_user: "",
-                        };
+                        const resetRow: any = {};
+                        Object.keys(columnNames).forEach(key => {
+                          resetRow[key] = key === 'status' ? 'pending' : '';
+                        });
                         customColumns.forEach(col => {
                           resetRow[col.id] = "";
                         });
@@ -670,7 +670,7 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
             
             {tasks.length === 0 && !isAddingRow && (
               <TableRow>
-                <TableCell colSpan={8 + customColumns.length} className="text-center py-8">
+                <TableCell colSpan={Object.keys(columnNames).length + customColumns.length + 1} className="text-center py-8">
                   <div className="text-muted-foreground">
                     <p className="mb-2">No tasks yet</p>
                     <Button variant="outline" onClick={() => setIsAddingRow(true)}>
