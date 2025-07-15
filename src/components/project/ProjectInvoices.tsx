@@ -45,9 +45,25 @@ interface ProjectInvoicesProps {
   organizationId: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+  client_name: string;
+  client_email: string | null;
+  client_phone: string | null;
+  project_address: string | null;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+}
+
 export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesProps) => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
+  const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -69,6 +85,8 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
   useEffect(() => {
     fetchInvoices();
     fetchServices();
+    fetchProject();
+    fetchOrganization();
   }, [projectId, organizationId]);
 
   const fetchInvoices = async () => {
@@ -105,6 +123,36 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       setServices(data || []);
     } catch (error) {
       console.error("Error fetching services:", error);
+    }
+  };
+
+  const fetchProject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("id, name, client_name, client_email, client_phone, project_address")
+        .eq("id", projectId)
+        .single();
+
+      if (error) throw error;
+      setProject(data);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+    }
+  };
+
+  const fetchOrganization = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("id, name")
+        .eq("id", organizationId)
+        .single();
+
+      if (error) throw error;
+      setOrganization(data);
+    } catch (error) {
+      console.error("Error fetching organization:", error);
     }
   };
 
@@ -287,7 +335,6 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
   };
 
   const handlePrintInvoice = (invoice: Invoice) => {
-    // Simple print functionality
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -295,24 +342,175 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
           <head>
             <title>Invoice ${invoice.invoice_number}</title>
             <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .details { margin-bottom: 20px; }
-              .total { font-weight: bold; font-size: 18px; }
+              body { 
+                font-family: Arial, sans-serif; 
+                margin: 0; 
+                padding: 40px; 
+                line-height: 1.4;
+                color: #333;
+              }
+              .invoice-header { 
+                display: flex; 
+                justify-content: space-between; 
+                margin-bottom: 40px; 
+                border-bottom: 2px solid #007bff;
+                padding-bottom: 20px;
+              }
+              .company-info h1 { 
+                color: #007bff; 
+                margin: 0; 
+                font-size: 32px;
+              }
+              .invoice-title { 
+                text-align: right; 
+                font-size: 24px; 
+                color: #666;
+              }
+              .billing-info { 
+                display: flex; 
+                justify-content: space-between; 
+                margin-bottom: 40px; 
+              }
+              .bill-to, .bill-from { 
+                flex: 1; 
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                margin: 0 10px;
+              }
+              .bill-to h3, .bill-from h3 { 
+                margin: 0 0 15px 0; 
+                color: #007bff; 
+                border-bottom: 1px solid #dee2e6;
+                padding-bottom: 8px;
+              }
+              .invoice-details { 
+                margin-bottom: 40px; 
+                padding: 20px;
+                background: #fff;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+              }
+              .invoice-details table { 
+                width: 100%; 
+                border-collapse: collapse; 
+              }
+              .invoice-details th, .invoice-details td { 
+                padding: 12px; 
+                border-bottom: 1px solid #dee2e6; 
+                text-align: left;
+              }
+              .invoice-details th { 
+                background: #f8f9fa; 
+                font-weight: bold;
+                color: #495057;
+              }
+              .payment-summary { 
+                text-align: right; 
+                margin-top: 30px; 
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 8px;
+              }
+              .payment-summary table { 
+                margin-left: auto; 
+                min-width: 300px;
+              }
+              .payment-summary tr.total { 
+                border-top: 2px solid #007bff; 
+                font-weight: bold; 
+                font-size: 18px;
+                color: #007bff;
+              }
+              .notes { 
+                margin-top: 30px; 
+                padding: 20px;
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 8px;
+              }
+              .payment-status {
+                display: inline-block;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-weight: bold;
+                text-transform: uppercase;
+                font-size: 12px;
+              }
+              .status-paid { background: #d4edda; color: #155724; }
+              .status-pending { background: #fff3cd; color: #856404; }
+              .status-overdue { background: #f8d7da; color: #721c24; }
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>INVOICE</h1>
-              <h2>${invoice.invoice_number}</h2>
+            <div class="invoice-header">
+              <div class="company-info">
+                <h1>${organization?.name || 'Your Company'}</h1>
+                <p>Professional Services</p>
+              </div>
+              <div class="invoice-title">
+                <h2>INVOICE</h2>
+                <p><strong>${invoice.invoice_number}</strong></p>
+                <div class="payment-status status-${invoice.balance_due > 0 ? 'pending' : 'paid'}">
+                  ${invoice.balance_due > 0 ? 'Payment Due' : 'Paid in Full'}
+                </div>
+              </div>
             </div>
-            <div class="details">
-              <p><strong>Issue Date:</strong> ${new Date(invoice.issue_date).toLocaleDateString()}</p>
-              <p><strong>Due Date:</strong> ${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'N/A'}</p>
-              <p><strong>Total Amount:</strong> $${invoice.total_amount.toFixed(2)}</p>
-              <p><strong>Paid Amount:</strong> $${invoice.paid_amount.toFixed(2)}</p>
-              <p class="total"><strong>Balance Due:</strong> $${invoice.balance_due.toFixed(2)}</p>
-              ${invoice.notes ? `<p><strong>Notes:</strong> ${invoice.notes}</p>` : ''}
+            
+            <div class="billing-info">
+              <div class="bill-from">
+                <h3>Bill From:</h3>
+                <p><strong>${organization?.name || 'Your Company'}</strong></p>
+                <p>Your Address<br>City, State ZIP<br>Phone: (555) 123-4567<br>Email: info@company.com</p>
+              </div>
+              <div class="bill-to">
+                <h3>Bill To:</h3>
+                <p><strong>${project?.client_name || 'Client Name'}</strong></p>
+                <p>${project?.project_address || 'Client Address'}</p>
+                ${project?.client_email ? `<p>Email: ${project.client_email}</p>` : ''}
+                ${project?.client_phone ? `<p>Phone: ${project.client_phone}</p>` : ''}
+                <p><strong>Project:</strong> ${project?.name || 'Project Name'}</p>
+              </div>
+            </div>
+            
+            <div class="invoice-details">
+              <table>
+                <tr>
+                  <th><strong>Invoice Date:</strong></th>
+                  <td>${new Date(invoice.issue_date).toLocaleDateString()}</td>
+                  <th><strong>Due Date:</strong></th>
+                  <td>${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'Upon Receipt'}</td>
+                </tr>
+              </table>
+            </div>
+            
+            <div class="payment-summary">
+              <table>
+                <tr>
+                  <td><strong>Total Amount:</strong></td>
+                  <td>$${invoice.total_amount.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td><strong>Amount Paid:</strong></td>
+                  <td>$${invoice.paid_amount.toFixed(2)}</td>
+                </tr>
+                <tr class="total">
+                  <td><strong>Balance Due:</strong></td>
+                  <td><strong>$${invoice.balance_due.toFixed(2)}</strong></td>
+                </tr>
+              </table>
+            </div>
+            
+            ${invoice.notes ? `
+              <div class="notes">
+                <h4>Additional Notes:</h4>
+                <p>${invoice.notes}</p>
+              </div>
+            ` : ''}
+            
+            <div style="margin-top: 50px; text-align: center; color: #666; font-size: 12px;">
+              <p>Thank you for your business!</p>
+              <p>Payment Terms: Net 30 Days | Late fees may apply after due date</p>
             </div>
           </body>
         </html>

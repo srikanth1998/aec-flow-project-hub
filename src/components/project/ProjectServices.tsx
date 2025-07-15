@@ -17,6 +17,7 @@ interface Service {
   description: string | null;
   unit_price: number;
   unit: string;
+  payment_status: string;
 }
 
 interface ProjectServicesProps {
@@ -32,7 +33,8 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
     name: "",
     description: "",
     unit_price: "",
-    unit: "hour"
+    unit: "hour",
+    payment_status: "unpaid"
   });
   const { toast } = useToast();
 
@@ -80,6 +82,7 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
         description: formData.description || null,
         unit_price: parseFloat(formData.unit_price),
         unit: formData.unit,
+        payment_status: formData.payment_status,
         organization_id: organizationId,
       };
 
@@ -108,7 +111,7 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
 
       setDialogOpen(false);
       setEditingService(null);
-      setFormData({ name: "", description: "", unit_price: "", unit: "hour" });
+      setFormData({ name: "", description: "", unit_price: "", unit: "hour", payment_status: "unpaid" });
       fetchServices();
     } catch (error) {
       console.error("Error saving service:", error);
@@ -127,6 +130,7 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
       description: service.description || "",
       unit_price: service.unit_price.toString(),
       unit: service.unit,
+      payment_status: service.payment_status,
     });
     setDialogOpen(true);
   };
@@ -159,7 +163,7 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingService(null);
-    setFormData({ name: "", description: "", unit_price: "", unit: "hour" });
+    setFormData({ name: "", description: "", unit_price: "", unit: "hour", payment_status: "unpaid" });
   };
 
   if (loading) {
@@ -236,7 +240,23 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
                   </Select>
                 </div>
               </div>
-              <div className="flex gap-2 pt-4">
+              <div>
+                <Label htmlFor="payment_status">Payment Status</Label>
+                <Select
+                  value={formData.payment_status}
+                  onValueChange={(value) => setFormData({ ...formData, payment_status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unpaid">Unpaid</SelectItem>
+                    <SelectItem value="to_be_paid">To Be Paid</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+               </div>
+               <div className="flex gap-2 pt-4">
                 <Button type="submit" className="flex-1">
                   {editingService ? "Update" : "Create"}
                 </Button>
@@ -266,6 +286,7 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
                   <TableHead>Description</TableHead>
                   <TableHead>Unit Price</TableHead>
                   <TableHead>Unit</TableHead>
+                  <TableHead>Payment Status</TableHead>
                   <TableHead className="w-24">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -278,6 +299,42 @@ export const ProjectServices = ({ organizationId }: ProjectServicesProps) => {
                     </TableCell>
                     <TableCell>${service.unit_price.toFixed(2)}</TableCell>
                     <TableCell>{service.unit}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={service.payment_status}
+                        onValueChange={async (value) => {
+                          try {
+                            const { error } = await supabase
+                              .from("services")
+                              .update({ payment_status: value })
+                              .eq("id", service.id);
+                            
+                            if (error) throw error;
+                            fetchServices();
+                            toast({
+                              title: "Success",
+                              description: "Payment status updated",
+                            });
+                          } catch (error) {
+                            console.error("Error updating payment status:", error);
+                            toast({
+                              title: "Error",
+                              description: "Failed to update payment status",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unpaid">Unpaid</SelectItem>
+                          <SelectItem value="to_be_paid">To Be Paid</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
                         <Button

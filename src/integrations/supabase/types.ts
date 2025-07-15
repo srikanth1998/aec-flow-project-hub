@@ -316,6 +316,7 @@ export type Database = {
           id: string
           name: string
           organization_id: string
+          payment_status: string | null
           unit: string | null
           unit_price: number
           updated_at: string
@@ -326,6 +327,7 @@ export type Database = {
           id?: string
           name: string
           organization_id: string
+          payment_status?: string | null
           unit?: string | null
           unit_price: number
           updated_at?: string
@@ -336,6 +338,7 @@ export type Database = {
           id?: string
           name?: string
           organization_id?: string
+          payment_status?: string | null
           unit?: string | null
           unit_price?: number
           updated_at?: string
