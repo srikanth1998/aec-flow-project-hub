@@ -17,6 +17,7 @@ interface Service {
   name: string;
   unit_price: number;
   unit: string;
+  payment_status?: string;
 }
 
 interface Invoice {
@@ -38,6 +39,7 @@ interface InvoiceItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  payment_status?: string;
 }
 
 interface ProjectInvoicesProps {
@@ -161,6 +163,19 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
     return `INV-${timestamp}`;
   };
 
+  const loadAllServicesIntoInvoice = () => {
+    const serviceItems = services.map((service) => ({
+      id: `temp-${service.id}`,
+      service_id: service.id,
+      description: service.name,
+      quantity: 1,
+      unit_price: service.unit_price,
+      total_price: service.unit_price,
+      payment_status: service.payment_status || 'unpaid'
+    }));
+    setInvoiceItems(serviceItems);
+  };
+
   const handleCreateInvoice = async () => {
     if (services.length === 0) {
       toast({
@@ -177,7 +192,10 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       due_date: "",
       notes: "",
     });
-    setInvoiceItems([]);
+    
+    // Load all services into invoice by default
+    loadAllServicesIntoInvoice();
+    
     setEditingInvoice(null);
     setDialogOpen(true);
   };
@@ -336,7 +354,22 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
     }
   };
 
-  const handlePrintInvoice = (invoice: Invoice) => {
+  const handlePrintInvoice = async (invoice: Invoice) => {
+    // Fetch invoice items with service details
+    const { data: items, error } = await supabase
+      .from('invoice_items')
+      .select(`
+        *,
+        service_id,
+        services (name, payment_status)
+      `)
+      .eq('invoice_id', invoice.id);
+
+    if (error) {
+      console.error('Error fetching invoice items:', error);
+      return;
+    }
+
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
@@ -483,6 +516,36 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
                   <th><strong>Due Date:</strong></th>
                   <td>${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'Upon Receipt'}</td>
                 </tr>
+              </table>
+            </div>
+            
+            <div style="margin-bottom: 40px;">
+              <h3 style="color: #007bff; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Services & Payment Status</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #f8f9fa;">
+                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: left;">Service</th>
+                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">Quantity</th>
+                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">Unit Price</th>
+                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">Total</th>
+                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">Payment Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items?.map((item: any) => `
+                    <tr>
+                      <td style="padding: 15px; border: 1px solid #dee2e6;">${item.description}</td>
+                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">${item.quantity}</td>
+                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">$${item.unit_price.toFixed(2)}</td>
+                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">$${item.total_price.toFixed(2)}</td>
+                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">
+                        <span class="payment-status status-${item.services?.payment_status || 'unpaid'}">
+                          ${(item.services?.payment_status || 'unpaid').toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  `).join('') || ''}
+                </tbody>
               </table>
             </div>
             
