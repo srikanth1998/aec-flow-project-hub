@@ -167,6 +167,120 @@ export type Database = {
           },
         ]
       }
+      task_assignments: {
+        Row: {
+          cost_incurred: number | null
+          created_at: string
+          date_worked: string | null
+          hours_spent: number | null
+          id: string
+          notes: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cost_incurred?: number | null
+          created_at?: string
+          date_worked?: string | null
+          hours_spent?: number | null
+          id?: string
+          notes?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cost_incurred?: number | null
+          created_at?: string
+          date_worked?: string | null
+          hours_spent?: number | null
+          id?: string
+          notes?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          actual_cost: number | null
+          actual_hours: number | null
+          created_at: string
+          created_by: string
+          description: string | null
+          estimated_cost: number | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          organization_id: string
+          project_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_cost?: number | null
+          actual_hours?: number | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          organization_id: string
+          project_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_cost?: number | null
+          actual_hours?: number | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          estimated_cost?: number | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          organization_id?: string
+          project_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

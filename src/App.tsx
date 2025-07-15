@@ -11,6 +11,7 @@ import CreateProject from "./pages/CreateProject";
 import ActiveProjects from "./pages/ActiveProjects";
 import CompletedProjects from "./pages/CompletedProjects";
 import BudgetOverview from "./pages/BudgetOverview";
+import ProjectDetail from "./pages/ProjectDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,8 +26,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/projects/new" element={<CreateProject />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/new" element={<CreateProject />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
           <Route path="/projects/active" element={<ActiveProjects />} />
           <Route path="/projects/completed" element={<CompletedProjects />} />
           <Route path="/budget" element={<BudgetOverview />} />

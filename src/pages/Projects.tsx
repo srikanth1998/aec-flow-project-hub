@@ -199,7 +199,12 @@ const Projects = () => {
                   )}
                   
                   <div className="pt-2">
-                    <Button variant="outline" size="sm" className="w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => navigate(`/projects/${project.id}`)}
+                    >
                       View Details
                     </Button>
                   </div>
