@@ -5,7 +5,9 @@ import {
   CheckSquare, 
   Receipt, 
   PenTool, 
-  FolderOpen 
+  FolderOpen,
+  Settings,
+  CreditCard
 } from "lucide-react";
 
 interface ProjectSidebarProps {
@@ -16,7 +18,8 @@ interface ProjectSidebarProps {
 const sidebarItems = [
   { id: "proposal", label: "Proposal", icon: FileText },
   { id: "tasks", label: "Tasks", icon: CheckSquare },
-  { id: "invoices", label: "Invoices", icon: Receipt },
+  { id: "services", label: "Services", icon: Settings },
+  { id: "invoices", label: "Invoices", icon: CreditCard },
   { id: "drawings", label: "Drawings", icon: PenTool },
   { id: "documents", label: "Documents", icon: FolderOpen },
 ];

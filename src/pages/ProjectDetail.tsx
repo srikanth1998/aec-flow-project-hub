@@ -7,6 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { ProjectSidebar } from "@/components/project/ProjectSidebar";
 import { ProjectTasks } from "@/components/project/ProjectTasks";
+import { ProjectServices } from "@/components/project/ProjectServices";
+import { ProjectInvoices } from "@/components/project/ProjectInvoices";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -89,10 +91,12 @@ const ProjectDetail = () => {
     switch (activeTab) {
       case "tasks":
         return <ProjectTasks projectId={project.id} />;
+      case "services":
+        return <ProjectServices organizationId={project.organization_id} />;
+      case "invoices":
+        return <ProjectInvoices projectId={project.id} organizationId={project.organization_id} />;
       case "proposal":
         return <div className="p-6">Proposal content coming soon...</div>;
-      case "invoices":
-        return <div className="p-6">Invoices content coming soon...</div>;
       case "drawings":
         return <div className="p-6">Drawings content coming soon...</div>;
       case "documents":
