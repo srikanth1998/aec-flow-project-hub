@@ -115,14 +115,38 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
 
   const fetchServices = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all services for the organization
+      const { data: allServices, error: servicesError } = await supabase
         .from("services")
         .select("*")
         .eq("organization_id", organizationId)
         .order("name");
 
-      if (error) throw error;
-      setServices(data || []);
+      if (servicesError) throw servicesError;
+
+      // Then get services that are already invoiced for this project
+      const { data: invoicedServices, error: invoicedError } = await supabase
+        .from("invoice_items")
+        .select(`
+          service_id,
+          invoices!inner(project_id)
+        `)
+        .eq("invoices.project_id", projectId)
+        .not("service_id", "is", null);
+
+      if (invoicedError) throw invoicedError;
+
+      // Get list of service IDs that are already invoiced
+      const invoicedServiceIds = new Set(
+        invoicedServices?.map(item => item.service_id) || []
+      );
+
+      // Filter out already invoiced services
+      const availableServices = allServices?.filter(
+        service => !invoicedServiceIds.has(service.id)
+      ) || [];
+
+      setServices(availableServices);
     } catch (error) {
       console.error("Error fetching services:", error);
     }
@@ -347,6 +371,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       setInvoiceItems([]);
       setEditingInvoice(null);
       fetchInvoices();
+      fetchServices(); // Refresh services to update availability
     } catch (error) {
       console.error("Error saving invoice:", error);
       toast({
@@ -459,6 +484,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       });
 
       fetchInvoices();
+      fetchServices(); // Refresh services to make them available again
     } catch (error) {
       console.error("Error deleting invoice:", error);
       toast({
