@@ -400,7 +400,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
             .company-name {
               font-size: 18px;
               font-weight: bold;
-              color: #ff6b6b;
+              color: #333;
               margin-bottom: 5px;
               text-transform: uppercase;
               letter-spacing: 3px;
@@ -509,10 +509,10 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
         <body>
           <div class="invoice-container">
             <div class="header">
-              <div class="company-name">${organization?.name || 'SQUARE CENTER ARCHITECTURE DESIGN STUDIO'}</div>
+              <div class="company-name">SQUARE CENTER, ARCHITECTURE DESIGN STUDIO</div>
               <div class="company-info">
-                85 Laurence Ave, West Orange NJ 07052<br>
-                Office 973 625 5454 &nbsp;&nbsp;&nbsp; Cell 973 445 2452
+                85 Lawrence Ave, West Orange NJ 07052<br>
+                Office 973 685 5454 Cell 973.495.2452
               </div>
             </div>
             
