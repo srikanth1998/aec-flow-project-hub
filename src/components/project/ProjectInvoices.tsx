@@ -725,78 +725,55 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
               line-height: 1.3;
             }
             
-            .date {
-              margin: 30px 0 20px 0;
-              font-size: 12px;
-            }
-            
-            .client-info {
-              margin-bottom: 25px;
-              font-size: 12px;
-              line-height: 1.4;
-            }
-            
-            .subject {
-              margin-bottom: 20px;
-              font-size: 12px;
+            .service-header {
+              font-size: 14px;
               font-weight: bold;
+              margin: 30px 0 15px 0;
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 1px solid #333;
+              padding-bottom: 5px;
             }
             
-            .project-address {
-              margin-bottom: 25px;
+            .service-line {
               font-size: 12px;
-              text-align: center;
+              margin: 8px 0;
+              padding-left: 20px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
             }
             
-            .intro-text {
-              margin-bottom: 20px;
-              font-size: 12px;
-            }
-            
-            .services-table {
-              width: 100%;
-              margin-bottom: 20px;
-              font-size: 12px;
-            }
-            
-            .services-table tr {
-              border-bottom: 1px solid #eee;
-            }
-            
-            .services-table td {
-              padding: 8px 0;
-              vertical-align: top;
-            }
-            
-            .service-name {
-              width: 60%;
-            }
-            
-            .service-amount {
-              width: 40%;
-              text-align: right;
-            }
-            
-            .paid {
+            .paid-item {
               color: #28a745;
+            }
+            
+            .current-item {
+              color: #dc3545;
               font-weight: bold;
             }
             
-            .current {
-              color: #ffc107;
-              font-weight: bold;
-            }
-            
-            .future {
+            .future-item {
               color: #6c757d;
             }
             
-            .section-header {
-              margin-top: 20px;
-              margin-bottom: 10px;
+            .balance-line {
+              font-size: 12px;
               font-weight: bold;
-              font-size: 13px;
-              text-transform: uppercase;
+              margin: 15px 0;
+              display: flex;
+              justify-content: space-between;
+              border-top: 1px solid #ddd;
+              padding-top: 10px;
+            }
+            
+            .due-line {
+              font-size: 12px;
+              margin: 8px 0;
+              padding-left: 40px;
+              display: flex;
+              justify-content: space-between;
+              text-decoration: underline;
             }
             
             .balance-section {
@@ -869,52 +846,40 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
               The following outlines the cost and expense associated with Architectural services:
             </div>
             
-            <table class="services-table">
-              <tbody>
-                ${paidServices.length > 0 ? `
-                  <tr><td colspan="2" class="section-header paid">Paid Services:</td></tr>
-                  ${paidServices.map(service => `
-                    <tr>
-                      <td class="service-name">${service.name}</td>
-                      <td class="service-amount paid">
-                        $${service.unit_price.toFixed(2)} (PAID ${service.paymentDate ? 'on ' + new Date(service.paymentDate).toLocaleDateString() : ''})
-                      </td>
-                    </tr>
-                  `).join('')}
-                ` : ''}
-                
-                ${currentService.length > 0 ? `
-                  <tr><td colspan="2" class="section-header current">Current Service Due:</td></tr>
-                  ${currentService.map(service => `
-                    <tr>
-                      <td class="service-name">${service.name}</td>
-                      <td class="service-amount current">
-                        $${service.unit_price.toFixed(2)} (Paid: $${service.amountPaid.toFixed(2)}, Due: $${service.balanceDue.toFixed(2)})
-                      </td>
-                    </tr>
-                  `).join('')}
-                ` : ''}
-                
-                ${futureServices.length > 0 ? `
-                  <tr><td colspan="2" class="section-header future">Future Services:</td></tr>
-                  ${futureServices.map(service => `
-                    <tr>
-                      <td class="service-name">${service.name}</td>
-                      <td class="service-amount future">$${service.unit_price.toFixed(2)}</td>
-                    </tr>
-                  `).join('')}
-                ` : ''}
-              </tbody>
-            </table>
-            
-            <div class="balance-section">
-              <div class="balance-due">
-                Project Total: $${totalProjectCost.toFixed(2)}<br>
-                Total Paid: $${totalPaid.toFixed(2)}<br>
-                <span class="balance-amount">Balance Due: $${(totalProjectCost - totalPaid).toFixed(2)}</span><br>
-                <span style="font-size: 11px;">Due on Receipt</span>
-              </div>
+            <div class="service-header">
+              <span>Architectural</span>
+              <span>$${totalProjectCost.toFixed(2)}</span>
             </div>
+            
+            ${paidServices.map(service => `
+              <div class="service-line paid-item">
+                <span>Initial Retainer:</span>
+                <span>Pd- ${service.paymentDate ? new Date(service.paymentDate).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' }) : ''} &lt;$${service.unit_price.toFixed(2)}&gt;</span>
+              </div>
+            `).join('')}
+            
+            ${currentService.map(service => `
+              <div class="service-line current-item">
+                <span>${service.name}</span>
+                <span>$${service.balanceDue.toFixed(2)}</span>
+              </div>
+              <div class="due-line">
+                <span>Due upon receipt – ${service.name} Fee</span>
+                <span>___     $${service.balanceDue.toFixed(2)}</span>
+              </div>
+            `).join('')}
+            
+            <div class="balance-line">
+              <span>Balance to Finish:</span>
+              <span>$${(totalProjectCost - totalPaid - currentService.reduce((sum, s) => sum + s.balanceDue, 0)).toFixed(2)}</span>
+            </div>
+            
+            ${futureServices.map(service => `
+              <div class="service-line future-item">
+                <span>${service.name}</span>
+                <span>$${service.unit_price.toFixed(2)}</span>
+              </div>
+            `).join('')}
             
             <div class="footer">
               <p>Thank you, It's been my pleasure working with you.</p>
