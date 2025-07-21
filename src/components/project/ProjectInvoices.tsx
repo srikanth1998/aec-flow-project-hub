@@ -40,6 +40,8 @@ interface InvoiceItem {
   unit_price: number;
   total_price: number;
   payment_status?: string;
+  payment_date?: string | null;
+  amount_paid?: number;
 }
 
 interface ProjectInvoicesProps {
@@ -187,17 +189,98 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
     return `INV-${timestamp}`;
   };
 
-  const loadAllServicesIntoInvoice = () => {
-    const serviceItems = services.map((service) => ({
-      id: `temp-${service.id}`,
-      service_id: service.id,
-      description: service.name,
-      quantity: 1,
-      unit_price: service.unit_price,
-      total_price: service.unit_price,
-      payment_status: service.payment_status || 'unpaid'
-    }));
-    setInvoiceItems(serviceItems);
+  const loadAllServicesIntoInvoice = async () => {
+    try {
+      // Get all services for the organization
+      const { data: allServices, error: servicesError } = await supabase
+        .from("services")
+        .select("*")
+        .eq("organization_id", organizationId)
+        .order("name");
+
+      if (servicesError) throw servicesError;
+
+      // Get all invoices for this project
+      const { data: projectInvoices, error: invoicesError } = await supabase
+        .from("invoices")
+        .select(`
+          id,
+          invoice_items (
+            service_id,
+            total_price
+          )
+        `)
+        .eq("project_id", projectId);
+
+      if (invoicesError) throw invoicesError;
+
+      // Get all payments for this project
+      const { data: allPayments, error: paymentsError } = await supabase
+        .from("payments")
+        .select(`
+          amount,
+          payment_date,
+          invoice_id
+        `);
+
+      if (paymentsError) throw paymentsError;
+
+      // Create maps for service billing and payments
+      const servicePayments = new Map();
+      
+      // Calculate payments per service
+      projectInvoices?.forEach(invoice => {
+        const invoicePayments = allPayments?.filter(p => p.invoice_id === invoice.id) || [];
+        const totalInvoicePayments = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        invoice.invoice_items?.forEach(item => {
+          if (item.service_id) {
+            if (!servicePayments.has(item.service_id)) {
+              servicePayments.set(item.service_id, { totalPaid: 0, lastPaymentDate: null });
+            }
+            
+            // Distribute payment proportionally if there are multiple items
+            const itemShare = item.total_price / (invoice.invoice_items?.reduce((sum, i) => sum + i.total_price, 0) || 1);
+            const itemPayment = totalInvoicePayments * itemShare;
+            
+            const current = servicePayments.get(item.service_id);
+            current.totalPaid += itemPayment;
+            
+            // Get the latest payment date for this invoice
+            const latestPayment = invoicePayments.sort((a, b) => 
+              new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
+            )[0];
+            
+            if (latestPayment && (!current.lastPaymentDate || 
+                new Date(latestPayment.payment_date) > new Date(current.lastPaymentDate))) {
+              current.lastPaymentDate = latestPayment.payment_date;
+            }
+          }
+        });
+      });
+
+      // Create invoice items for all services with payment status
+      const serviceItems = allServices?.map((service) => {
+        const paymentInfo = servicePayments.get(service.id) || { totalPaid: 0, lastPaymentDate: null };
+        const isPaid = paymentInfo.totalPaid >= service.unit_price;
+
+        return {
+          id: `temp-${service.id}`,
+          service_id: service.id,
+          description: service.name,
+          quantity: 1,
+          unit_price: service.unit_price,
+          total_price: service.unit_price,
+          payment_status: isPaid ? 'paid' : 'unpaid',
+          payment_date: paymentInfo.lastPaymentDate,
+          amount_paid: paymentInfo.totalPaid
+        };
+      }) || [];
+
+      setInvoiceItems(serviceItems);
+    } catch (error) {
+      console.error("Error loading services:", error);
+    }
   };
 
   const handleCreateInvoice = async () => {
@@ -496,20 +579,109 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
   };
 
   const handlePrintInvoice = async (invoice: Invoice) => {
-    // Fetch invoice items with service details
-    const { data: items, error } = await supabase
-      .from('invoice_items')
-      .select(`
-        *,
-        service_id,
-        services (name, payment_status)
-      `)
-      .eq('invoice_id', invoice.id);
+    // Get all services for this organization
+    const { data: allServices, error: servicesError } = await supabase
+      .from('services')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('name');
 
-    if (error) {
-      console.error('Error fetching invoice items:', error);
+    if (servicesError) {
+      console.error('Error fetching services:', servicesError);
       return;
     }
+
+    // Get all invoices for this project to calculate payment status
+    const { data: projectInvoices, error: invoicesError } = await supabase
+      .from('invoices')
+      .select(`
+        id,
+        invoice_items (
+          service_id,
+          total_price
+        )
+      `)
+      .eq('project_id', projectId);
+
+    if (invoicesError) {
+      console.error('Error fetching project invoices:', invoicesError);
+      return;
+    }
+
+    // Get all payments for this project
+    const { data: allPayments, error: paymentsError } = await supabase
+      .from('payments')
+      .select(`
+        amount,
+        payment_date,
+        invoice_id
+      `);
+
+    if (paymentsError) {
+      console.error('Error fetching payments:', paymentsError);
+      return;
+    }
+
+    // Calculate payment status for each service
+    const servicePayments = new Map();
+    
+    projectInvoices?.forEach(inv => {
+      const invoicePayments = allPayments?.filter(p => p.invoice_id === inv.id) || [];
+      const totalInvoicePayments = invoicePayments.reduce((sum, p) => sum + p.amount, 0);
+      
+      inv.invoice_items?.forEach(item => {
+        if (item.service_id) {
+          if (!servicePayments.has(item.service_id)) {
+            servicePayments.set(item.service_id, { totalPaid: 0, lastPaymentDate: null });
+          }
+          
+          const itemShare = item.total_price / (inv.invoice_items?.reduce((sum, i) => sum + i.total_price, 0) || 1);
+          const itemPayment = totalInvoicePayments * itemShare;
+          
+          const current = servicePayments.get(item.service_id);
+          current.totalPaid += itemPayment;
+          
+          const latestPayment = invoicePayments.sort((a, b) => 
+            new Date(b.payment_date).getTime() - new Date(a.payment_date).getTime()
+          )[0];
+          
+          if (latestPayment && (!current.lastPaymentDate || 
+              new Date(latestPayment.payment_date) > new Date(current.lastPaymentDate))) {
+            current.lastPaymentDate = latestPayment.payment_date;
+          }
+        }
+      });
+    });
+
+    // Categorize services
+    const paidServices = [];
+    const currentService = [];
+    const futureServices = [];
+    let totalProjectCost = 0;
+    let totalPaid = 0;
+
+    allServices?.forEach(service => {
+      const paymentInfo = servicePayments.get(service.id) || { totalPaid: 0, lastPaymentDate: null };
+      const isPaid = paymentInfo.totalPaid >= service.unit_price;
+      totalProjectCost += service.unit_price;
+      totalPaid += paymentInfo.totalPaid;
+
+      if (isPaid) {
+        paidServices.push({
+          ...service,
+          paymentDate: paymentInfo.lastPaymentDate,
+          amountPaid: paymentInfo.totalPaid
+        });
+      } else if (paymentInfo.totalPaid > 0) {
+        currentService.push({
+          ...service,
+          amountPaid: paymentInfo.totalPaid,
+          balanceDue: service.unit_price - paymentInfo.totalPaid
+        });
+      } else {
+        futureServices.push(service);
+      }
+    });
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
@@ -583,7 +755,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
             
             .services-table {
               width: 100%;
-              margin-bottom: 30px;
+              margin-bottom: 20px;
               font-size: 12px;
             }
             
@@ -608,6 +780,23 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
             .paid {
               color: #28a745;
               font-weight: bold;
+            }
+            
+            .current {
+              color: #ffc107;
+              font-weight: bold;
+            }
+            
+            .future {
+              color: #6c757d;
+            }
+            
+            .section-header {
+              margin-top: 20px;
+              margin-bottom: 10px;
+              font-weight: bold;
+              font-size: 13px;
+              text-transform: uppercase;
             }
             
             .balance-section {
@@ -682,28 +871,47 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
             
             <table class="services-table">
               <tbody>
-                ${items?.map((item: any) => {
-                  const isPaid = item.services?.payment_status === 'paid';
-                  return `
+                ${paidServices.length > 0 ? `
+                  <tr><td colspan="2" class="section-header paid">Paid Services:</td></tr>
+                  ${paidServices.map(service => `
                     <tr>
-                      <td class="service-name">${item.description}</td>
-                      <td class="service-amount">
-                        ${isPaid ? 
-                          `<span class="paid">$${item.total_price.toFixed(2)} (PAID)</span>` : 
-                          `$${item.total_price.toFixed(2)}`
-                        }
+                      <td class="service-name">${service.name}</td>
+                      <td class="service-amount paid">
+                        $${service.unit_price.toFixed(2)} (PAID ${service.paymentDate ? 'on ' + new Date(service.paymentDate).toLocaleDateString() : ''})
                       </td>
                     </tr>
-                  `;
-                }).join('') || ''}
+                  `).join('')}
+                ` : ''}
+                
+                ${currentService.length > 0 ? `
+                  <tr><td colspan="2" class="section-header current">Current Service Due:</td></tr>
+                  ${currentService.map(service => `
+                    <tr>
+                      <td class="service-name">${service.name}</td>
+                      <td class="service-amount current">
+                        $${service.unit_price.toFixed(2)} (Paid: $${service.amountPaid.toFixed(2)}, Due: $${service.balanceDue.toFixed(2)})
+                      </td>
+                    </tr>
+                  `).join('')}
+                ` : ''}
+                
+                ${futureServices.length > 0 ? `
+                  <tr><td colspan="2" class="section-header future">Future Services:</td></tr>
+                  ${futureServices.map(service => `
+                    <tr>
+                      <td class="service-name">${service.name}</td>
+                      <td class="service-amount future">$${service.unit_price.toFixed(2)}</td>
+                    </tr>
+                  `).join('')}
+                ` : ''}
               </tbody>
             </table>
             
             <div class="balance-section">
               <div class="balance-due">
-                <span class="balance-amount">Balance Due</span>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                <span class="balance-amount">$${invoice.balance_due.toFixed(2)}</span><br>
+                Project Total: $${totalProjectCost.toFixed(2)}<br>
+                Total Paid: $${totalPaid.toFixed(2)}<br>
+                <span class="balance-amount">Balance Due: $${(totalProjectCost - totalPaid).toFixed(2)}</span><br>
                 <span style="font-size: 11px;">Due on Receipt</span>
               </div>
             </div>
