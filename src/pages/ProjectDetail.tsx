@@ -92,7 +92,7 @@ const ProjectDetail = () => {
       case "tasks":
         return <ProjectTasks projectId={project.id} />;
       case "services":
-        return <ProjectServices organizationId={project.organization_id} />;
+        return <ProjectServices projectId={project.id} organizationId={project.organization_id} />;
       case "invoices":
         return <ProjectInvoices projectId={project.id} organizationId={project.organization_id} />;
       case "proposal":
