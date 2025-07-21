@@ -373,211 +373,209 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
-          <head>
-            <title>Invoice ${invoice.invoice_number}</title>
-            <style>
+        <head>
+          <title>Invoice ${invoice.invoice_number}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 0;
+              padding: 40px;
+              line-height: 1.6;
+              color: #333;
+              background: white;
+            }
+            
+            .invoice-container {
+              max-width: 700px;
+              margin: 0 auto;
+            }
+            
+            .header {
+              text-align: center;
+              margin-bottom: 40px;
+            }
+            
+            .company-name {
+              font-size: 18px;
+              font-weight: bold;
+              color: #ff6b6b;
+              margin-bottom: 5px;
+              text-transform: uppercase;
+              letter-spacing: 3px;
+            }
+            
+            .company-info {
+              font-size: 11px;
+              color: #333;
+              line-height: 1.3;
+            }
+            
+            .date {
+              margin: 30px 0 20px 0;
+              font-size: 12px;
+            }
+            
+            .client-info {
+              margin-bottom: 25px;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+            
+            .subject {
+              margin-bottom: 20px;
+              font-size: 12px;
+              font-weight: bold;
+            }
+            
+            .project-address {
+              margin-bottom: 25px;
+              font-size: 12px;
+              text-align: center;
+            }
+            
+            .intro-text {
+              margin-bottom: 20px;
+              font-size: 12px;
+            }
+            
+            .services-table {
+              width: 100%;
+              margin-bottom: 30px;
+              font-size: 12px;
+            }
+            
+            .services-table tr {
+              border-bottom: 1px solid #eee;
+            }
+            
+            .services-table td {
+              padding: 8px 0;
+              vertical-align: top;
+            }
+            
+            .service-name {
+              width: 60%;
+            }
+            
+            .service-amount {
+              width: 40%;
+              text-align: right;
+            }
+            
+            .paid {
+              color: #28a745;
+              font-weight: bold;
+            }
+            
+            .balance-section {
+              margin-top: 30px;
+              padding-top: 15px;
+              border-top: 1px solid #333;
+            }
+            
+            .balance-due {
+              text-align: right;
+              font-size: 12px;
+            }
+            
+            .balance-amount {
+              color: #dc3545;
+              font-weight: bold;
+              text-decoration: underline;
+            }
+            
+            .footer {
+              margin-top: 50px;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+            
+            .signature {
+              margin-top: 20px;
+              color: #007bff;
+              text-decoration: underline;
+            }
+            
+            @media print {
               body { 
-                font-family: Arial, sans-serif; 
                 margin: 0; 
-                padding: 40px; 
-                line-height: 1.4;
-                color: #333;
-              }
-              .invoice-header { 
-                display: flex; 
-                justify-content: space-between; 
-                margin-bottom: 40px; 
-                border-bottom: 2px solid #007bff;
-                padding-bottom: 20px;
-              }
-              .company-info h1 { 
-                color: #007bff; 
-                margin: 0; 
-                font-size: 32px;
-              }
-              .invoice-title { 
-                text-align: right; 
-                font-size: 24px; 
-                color: #666;
-              }
-              .billing-info { 
-                display: flex; 
-                justify-content: space-between; 
-                margin-bottom: 40px; 
-              }
-              .bill-to, .bill-from { 
-                flex: 1; 
                 padding: 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-                margin: 0 10px;
               }
-              .bill-to h3, .bill-from h3 { 
-                margin: 0 0 15px 0; 
-                color: #007bff; 
-                border-bottom: 1px solid #dee2e6;
-                padding-bottom: 8px;
-              }
-              .invoice-details { 
-                margin-bottom: 40px; 
-                padding: 20px;
-                background: #fff;
-                border: 1px solid #dee2e6;
-                border-radius: 8px;
-              }
-              .invoice-details table { 
-                width: 100%; 
-                border-collapse: collapse; 
-              }
-              .invoice-details th, .invoice-details td { 
-                padding: 12px; 
-                border-bottom: 1px solid #dee2e6; 
-                text-align: left;
-              }
-              .invoice-details th { 
-                background: #f8f9fa; 
-                font-weight: bold;
-                color: #495057;
-              }
-              .payment-summary { 
-                text-align: right; 
-                margin-top: 30px; 
-                padding: 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-              }
-              .payment-summary table { 
-                margin-left: auto; 
-                min-width: 300px;
-              }
-              .payment-summary tr.total { 
-                border-top: 2px solid #007bff; 
-                font-weight: bold; 
-                font-size: 18px;
-                color: #007bff;
-              }
-              .notes { 
-                margin-top: 30px; 
-                padding: 20px;
-                background: #fff3cd;
-                border: 1px solid #ffeaa7;
-                border-radius: 8px;
-              }
-              .payment-status {
-                display: inline-block;
-                padding: 8px 16px;
-                border-radius: 20px;
-                font-weight: bold;
-                text-transform: uppercase;
-                font-size: 12px;
-              }
-              .status-paid { background: #d4edda; color: #155724; }
-              .status-pending { background: #fff3cd; color: #856404; }
-              .status-overdue { background: #f8d7da; color: #721c24; }
-            </style>
-          </head>
-          <body>
-            <div class="invoice-header">
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <div class="header">
+              <div class="company-name">${organization?.name || 'SQUARE CENTER ARCHITECTURE DESIGN STUDIO'}</div>
               <div class="company-info">
-                <h1>${organization?.name || 'Your Company'}</h1>
-                <p>Professional Services</p>
-              </div>
-              <div class="invoice-title">
-                <h2>INVOICE</h2>
-                <p><strong>${invoice.invoice_number}</strong></p>
-                <div class="payment-status status-${invoice.balance_due > 0 ? 'pending' : 'paid'}">
-                  ${invoice.balance_due > 0 ? 'Payment Due' : 'Paid in Full'}
-                </div>
+                85 Laurence Ave, West Orange NJ 07052<br>
+                Office 973 625 5454 &nbsp;&nbsp;&nbsp; Cell 973 445 2452
               </div>
             </div>
             
-            <div class="billing-info">
-              <div class="bill-from">
-                <h3>Bill From:</h3>
-                <p><strong>${organization?.name || 'Your Company'}</strong></p>
-                <p>Your Address<br>City, State ZIP<br>Phone: (555) 123-4567<br>Email: info@company.com</p>
-              </div>
-              <div class="bill-to">
-                <h3>Bill To:</h3>
-                <p><strong>${project?.client_name || 'Client Name'}</strong></p>
-                <p>${project?.project_address || 'Client Address'}</p>
-                ${project?.client_email ? `<p>Email: ${project.client_email}</p>` : ''}
-                ${project?.client_phone ? `<p>Phone: ${project.client_phone}</p>` : ''}
-                <p><strong>Project:</strong> ${project?.name || 'Project Name'}</p>
-              </div>
+            <div class="date">
+              ${new Date(invoice.issue_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
             </div>
             
-            <div class="invoice-details">
-              <table>
-                <tr>
-                  <th><strong>Invoice Date:</strong></th>
-                  <td>${new Date(invoice.issue_date).toLocaleDateString()}</td>
-                  <th><strong>Due Date:</strong></th>
-                  <td>${invoice.due_date ? new Date(invoice.due_date).toLocaleDateString() : 'Upon Receipt'}</td>
-                </tr>
-              </table>
+            <div class="client-info">
+              ${project?.client_name || 'Client Name'}<br>
+              ${project?.client_email ? `<a href="mailto:${project.client_email}" style="color: #007bff; text-decoration: underline;">${project.client_email}</a><br>` : ''}
+              ${project?.client_phone || ''}
             </div>
             
-            <div style="margin-bottom: 40px;">
-              <h3 style="color: #007bff; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px;">Services & Payment Status</h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="background: #f8f9fa;">
-                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: left;">Service</th>
-                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">Quantity</th>
-                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">Unit Price</th>
-                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">Total</th>
-                    <th style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">Payment Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items?.map((item: any) => `
+            <div class="subject">
+              <strong>RE:</strong> ${project?.name || 'Architectural Services'}: ${project?.project_address || 'interior remodel, living/dining room, kitchen and mud/laundry room'}
+            </div>
+            
+            <div class="project-address">
+              ${project?.project_address || 'Project Address'}<br>
+              Block 600 Lot 13
+            </div>
+            
+            <div class="intro-text">
+              The following outlines the cost and expense associated with Architectural services:
+            </div>
+            
+            <table class="services-table">
+              <tbody>
+                ${items?.map((item: any) => {
+                  const isPaid = item.services?.payment_status === 'paid';
+                  return `
                     <tr>
-                      <td style="padding: 15px; border: 1px solid #dee2e6;">${item.description}</td>
-                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">${item.quantity}</td>
-                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">$${item.unit_price.toFixed(2)}</td>
-                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: right;">$${item.total_price.toFixed(2)}</td>
-                      <td style="padding: 15px; border: 1px solid #dee2e6; text-align: center;">
-                        <span class="payment-status status-${item.services?.payment_status || 'unpaid'}">
-                          ${(item.services?.payment_status || 'unpaid').toUpperCase()}
-                        </span>
+                      <td class="service-name">${item.description}</td>
+                      <td class="service-amount">
+                        ${isPaid ? 
+                          `<span class="paid">$${item.total_price.toFixed(2)} (PAID)</span>` : 
+                          `$${item.total_price.toFixed(2)}`
+                        }
                       </td>
                     </tr>
-                  `).join('') || ''}
-                </tbody>
-              </table>
-            </div>
+                  `;
+                }).join('') || ''}
+              </tbody>
+            </table>
             
-            <div class="payment-summary">
-              <table>
-                <tr>
-                  <td><strong>Total Amount:</strong></td>
-                  <td>$${invoice.total_amount.toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td><strong>Amount Paid:</strong></td>
-                  <td>$${invoice.paid_amount.toFixed(2)}</td>
-                </tr>
-                <tr class="total">
-                  <td><strong>Balance Due:</strong></td>
-                  <td><strong>$${invoice.balance_due.toFixed(2)}</strong></td>
-                </tr>
-              </table>
-            </div>
-            
-            ${invoice.notes ? `
-              <div class="notes">
-                <h4>Additional Notes:</h4>
-                <p>${invoice.notes}</p>
+            <div class="balance-section">
+              <div class="balance-due">
+                <span class="balance-amount">Balance Due</span>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                <span class="balance-amount">$${invoice.balance_due.toFixed(2)}</span><br>
+                <span style="font-size: 11px;">Due on Receipt</span>
               </div>
-            ` : ''}
-            
-            <div style="margin-top: 50px; text-align: center; color: #666; font-size: 12px;">
-              <p>Thank you for your business!</p>
-              <p>Payment Terms: Net 30 Days | Late fees may apply after due date</p>
             </div>
-          </body>
+            
+            <div class="footer">
+              <p>Thank you, It's been my pleasure working with you.</p>
+              <p>Respectfully yours,</p>
+              <br>
+              <p><strong>William Gentile, Architect,</strong><br>
+              <a href="mailto:william.squarecenter@gmail.com" class="signature">william.squarecenter@gmail.com</a></p>
+            </div>
+          </div>
+        </body>
         </html>
       `);
       printWindow.document.close();
