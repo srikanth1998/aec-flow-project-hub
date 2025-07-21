@@ -259,53 +259,99 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
     try {
       const totalAmount = calculateTotalAmount();
       
-      const invoiceData = {
-        project_id: projectId,
-        organization_id: organizationId,
-        invoice_number: formData.invoice_number,
-        total_amount: totalAmount,
-        due_date: formData.due_date || null,
-        notes: formData.notes || null,
-      };
+      if (editingInvoice) {
+        // Update existing invoice
+        const { error: invoiceError } = await supabase
+          .from("invoices")
+          .update({
+            invoice_number: formData.invoice_number,
+            total_amount: totalAmount,
+            due_date: formData.due_date || null,
+            notes: formData.notes || null,
+          })
+          .eq("id", editingInvoice.id);
 
-      const { data: invoice, error: invoiceError } = await supabase
-        .from("invoices")
-        .insert(invoiceData)
-        .select()
-        .single();
+        if (invoiceError) throw invoiceError;
 
-      if (invoiceError) throw invoiceError;
+        // Delete existing invoice items
+        const { error: deleteError } = await supabase
+          .from("invoice_items")
+          .delete()
+          .eq("invoice_id", editingInvoice.id);
 
-      // Insert invoice items
-      const itemsData = invoiceItems.map((item) => ({
-        invoice_id: invoice.id,
-        service_id: item.service_id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price,
-      }));
+        if (deleteError) throw deleteError;
 
-      const { error: itemsError } = await supabase
-        .from("invoice_items")
-        .insert(itemsData);
+        // Insert updated invoice items
+        const itemsData = invoiceItems.map((item) => ({
+          invoice_id: editingInvoice.id,
+          service_id: item.service_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }));
 
-      if (itemsError) throw itemsError;
+        const { error: itemsError } = await supabase
+          .from("invoice_items")
+          .insert(itemsData);
 
-      toast({
-        title: "Success",
-        description: "Invoice created successfully",
-      });
+        if (itemsError) throw itemsError;
+
+        toast({
+          title: "Success",
+          description: "Invoice updated successfully",
+        });
+      } else {
+        // Create new invoice
+        const invoiceData = {
+          project_id: projectId,
+          organization_id: organizationId,
+          invoice_number: formData.invoice_number,
+          total_amount: totalAmount,
+          due_date: formData.due_date || null,
+          notes: formData.notes || null,
+        };
+
+        const { data: invoice, error: invoiceError } = await supabase
+          .from("invoices")
+          .insert(invoiceData)
+          .select()
+          .single();
+
+        if (invoiceError) throw invoiceError;
+
+        // Insert invoice items
+        const itemsData = invoiceItems.map((item) => ({
+          invoice_id: invoice.id,
+          service_id: item.service_id,
+          description: item.description,
+          quantity: item.quantity,
+          unit_price: item.unit_price,
+          total_price: item.total_price,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from("invoice_items")
+          .insert(itemsData);
+
+        if (itemsError) throw itemsError;
+
+        toast({
+          title: "Success",
+          description: "Invoice created successfully",
+        });
+      }
 
       setDialogOpen(false);
       setFormData({ invoice_number: "", due_date: "", notes: "" });
       setInvoiceItems([]);
+      setEditingInvoice(null);
       fetchInvoices();
     } catch (error) {
-      console.error("Error creating invoice:", error);
+      console.error("Error saving invoice:", error);
       toast({
         title: "Error",
-        description: "Failed to create invoice",
+        description: `Failed to ${editingInvoice ? 'update' : 'create'} invoice`,
         variant: "destructive",
       });
     }
@@ -349,6 +395,75 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       toast({
         title: "Error",
         description: "Failed to record payment",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditInvoice = async (invoice: Invoice) => {
+    try {
+      // Fetch existing invoice items
+      const { data: items, error } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', invoice.id);
+
+      if (error) throw error;
+
+      // Set up form data for editing
+      setFormData({
+        invoice_number: invoice.invoice_number,
+        due_date: invoice.due_date || "",
+        notes: invoice.notes || "",
+      });
+
+      // Set up invoice items
+      setInvoiceItems(items || []);
+      setEditingInvoice(invoice);
+      setDialogOpen(true);
+    } catch (error) {
+      console.error("Error loading invoice for editing:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load invoice for editing",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteInvoice = async (invoiceId: string) => {
+    if (!confirm("Are you sure you want to delete this invoice? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      // First delete invoice items
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoiceId);
+
+      if (itemsError) throw itemsError;
+
+      // Then delete the invoice
+      const { error: invoiceError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', invoiceId);
+
+      if (invoiceError) throw invoiceError;
+
+      toast({
+        title: "Success",
+        description: "Invoice deleted successfully",
+      });
+
+      fetchInvoices();
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete invoice",
         variant: "destructive",
       });
     }
@@ -650,6 +765,22 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
                         <Button
                           size="sm"
                           variant="ghost"
+                          onClick={() => handleEditInvoice(invoice)}
+                          title="Edit Invoice"
+                        >
+                          <Edit className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteInvoice(invoice.id)}
+                          title="Delete Invoice"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
                           onClick={() => handlePrintInvoice(invoice)}
                           title="Print Invoice"
                         >
@@ -681,7 +812,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Create New Invoice</DialogTitle>
+            <DialogTitle>{editingInvoice ? "Edit Invoice" : "Create New Invoice"}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmitInvoice} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
@@ -796,7 +927,7 @@ export const ProjectInvoices = ({ projectId, organizationId }: ProjectInvoicesPr
                 Total: ${calculateTotalAmount().toFixed(2)}
               </div>
               <div className="flex gap-2">
-                <Button type="submit">Create Invoice</Button>
+                <Button type="submit">{editingInvoice ? "Update Invoice" : "Create Invoice"}</Button>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancel
                 </Button>
