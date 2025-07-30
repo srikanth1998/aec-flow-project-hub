@@ -97,7 +97,7 @@ const ProjectDetail = () => {
       case "invoices":
         return <ProjectInvoices projectId={project.id} organizationId={project.organization_id} />;
       case "expenses":
-        return <ProjectExpenses projectId={project.id} organizationId={project.organization_id} />;
+        return <ProjectExpenses projectId={project.id} organizationId={project.organization_id} project={project} />;
       case "proposal":
         return <div className="p-6">Proposal content coming soon...</div>;
       case "drawings":

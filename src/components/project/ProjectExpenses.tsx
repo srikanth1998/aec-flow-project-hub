@@ -22,9 +22,10 @@ interface Expense {
 interface ProjectExpensesProps {
   organizationId: string;
   projectId: string;
+  project: any;
 }
 
-export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesProps) => {
+export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectExpensesProps) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
@@ -309,7 +310,7 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
   };
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalBudget = 10000; // Static for now
+  const totalBudget = project?.estimated_budget || 0;
   const balance = totalBudget - totalExpenses;
 
   if (loading) {
