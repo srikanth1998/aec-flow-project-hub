@@ -309,27 +309,56 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
   };
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalBudget = 10000; // Static for now
+  const balance = totalBudget - totalExpenses;
 
   if (loading) {
     return <div>Loading expenses...</div>;
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle>Expenses</CardTitle>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              Total: {formatCurrency(totalExpenses)}
-            </span>
+    <div className="space-y-6">
+      {/* Summary Section */}
+      <div className="grid grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-sm font-medium text-muted-foreground">Total Budget</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalBudget)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-sm font-medium text-muted-foreground">Total Spent</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <p className="text-sm font-medium text-muted-foreground">Balance</p>
+              <p className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(balance)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Expenses Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Expenses</CardTitle>
             <Button onClick={() => setShowAddRow(true)} disabled={showAddRow}>
               <Plus className="h-4 w-4 mr-2" />
               Add Expense
             </Button>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
@@ -569,6 +598,7 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
           </TableBody>
         </Table>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 };
