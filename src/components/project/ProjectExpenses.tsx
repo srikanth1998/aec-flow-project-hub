@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Calendar, Upload } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, Calendar, Upload, X, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,8 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
     payment_method: "",
   });
   const [showAddRow, setShowAddRow] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -180,6 +182,130 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  };
+
+  const handleFileUpload = async (file: File, expenseId: string) => {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Only PNG, JPG, and PDF files are allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(expenseId);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("User not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userData.user.id}/${expenseId}/receipt.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      // Update the expense with the receipt URL
+      const { error: updateError } = await supabase
+        .from('expenses')
+        .update({ receipt_url: publicUrl })
+        .eq('id', expenseId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setExpenses(expenses.map(e => 
+        e.id === expenseId ? { ...e, receipt_url: publicUrl } : e
+      ));
+
+      toast({
+        title: "Success",
+        description: "Receipt uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload receipt",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleRemoveReceipt = async (expenseId: string, receiptUrl: string) => {
+    try {
+      // Extract file path from URL
+      const urlParts = receiptUrl.split('/receipts/');
+      if (urlParts.length > 1) {
+        const filePath = urlParts[1];
+        
+        const { error: deleteError } = await supabase.storage
+          .from('receipts')
+          .remove([filePath]);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Update the expense to remove receipt URL
+      const { error: updateError } = await supabase
+        .from('expenses')
+        .update({ receipt_url: null })
+        .eq('id', expenseId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setExpenses(expenses.map(e => 
+        e.id === expenseId ? { ...e, receipt_url: null } : e
+      ));
+
+      toast({
+        title: "Success",
+        description: "Receipt removed successfully",
+      });
+    } catch (error) {
+      console.error("Error removing receipt:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove receipt",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getFileName = (url: string) => {
+    const parts = url.split('/');
+    const fileName = parts[parts.length - 1];
+    return fileName.split('.')[0] === 'receipt' ? 
+      `receipt.${fileName.split('.')[1]}` : fileName;
+  };
+
+  const isImage = (url: string) => {
+    return url.match(/\.(jpg|jpeg|png)$/i);
   };
 
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -343,17 +469,58 @@ export const ProjectExpenses = ({ organizationId, projectId }: ProjectExpensesPr
                   )}
                 </TableCell>
                 <TableCell>
-                  {expense.receipt_url ? (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer">
-                        View
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" disabled>
-                      <Upload className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {expense.receipt_url ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(expense.receipt_url!, '_blank')}
+                          className="flex items-center gap-1"
+                        >
+                          {isImage(expense.receipt_url) ? (
+                            <Eye className="h-3 w-3" />
+                          ) : (
+                            <FileText className="h-3 w-3" />
+                          )}
+                          <span className="text-xs truncate max-w-16">
+                            {getFileName(expense.receipt_url)}
+                          </span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleRemoveReceipt(expense.id, expense.receipt_url!)}
+                          className="p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          ref={(el) => fileInputRefs.current[expense.id] = el}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleFileUpload(file, expense.id);
+                          }}
+                          accept=".png,.jpg,.jpeg,.pdf"
+                          className="hidden"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRefs.current[expense.id]?.click()}
+                          disabled={uploading === expense.id}
+                          className="flex items-center gap-1"
+                        >
+                          <Upload className="h-3 w-3" />
+                          {uploading === expense.id ? 'Uploading...' : 'Upload'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
