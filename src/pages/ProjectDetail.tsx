@@ -10,6 +10,7 @@ import { ProjectTasks } from "@/components/project/ProjectTasks";
 import { ProjectServices } from "@/components/project/ProjectServices";
 import { ProjectInvoices } from "@/components/project/ProjectInvoices";
 import { ProjectExpenses } from "@/components/project/ProjectExpenses";
+import { ProjectDocuments } from "@/components/project/ProjectDocuments";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -103,7 +104,7 @@ const ProjectDetail = () => {
       case "drawings":
         return <div className="p-6">Drawings content coming soon...</div>;
       case "documents":
-        return <div className="p-6">Documents content coming soon...</div>;
+        return <ProjectDocuments projectId={project.id} organizationId={project.organization_id} />;
       default:
         return <ProjectTasks projectId={project.id} />;
     }
