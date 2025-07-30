@@ -9,6 +9,7 @@ import { ProjectSidebar } from "@/components/project/ProjectSidebar";
 import { ProjectTasks } from "@/components/project/ProjectTasks";
 import { ProjectServices } from "@/components/project/ProjectServices";
 import { ProjectInvoices } from "@/components/project/ProjectInvoices";
+import { ProjectExpenses } from "@/components/project/ProjectExpenses";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -95,6 +96,8 @@ const ProjectDetail = () => {
         return <ProjectServices projectId={project.id} organizationId={project.organization_id} />;
       case "invoices":
         return <ProjectInvoices projectId={project.id} organizationId={project.organization_id} />;
+      case "expenses":
+        return <ProjectExpenses projectId={project.id} organizationId={project.organization_id} />;
       case "proposal":
         return <div className="p-6">Proposal content coming soon...</div>;
       case "drawings":

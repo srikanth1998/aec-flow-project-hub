@@ -20,6 +20,7 @@ const sidebarItems = [
   { id: "tasks", label: "Tasks", icon: CheckSquare },
   { id: "services", label: "Services", icon: Settings },
   { id: "invoices", label: "Invoices", icon: CreditCard },
+  { id: "expenses", label: "Expenses", icon: Receipt },
   { id: "drawings", label: "Drawings", icon: PenTool },
   { id: "documents", label: "Documents", icon: FolderOpen },
 ];
