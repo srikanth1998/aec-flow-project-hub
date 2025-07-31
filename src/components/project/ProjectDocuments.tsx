@@ -197,8 +197,13 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
     }
   };
 
-  const handleViewDocument = async (storagePath: string) => {
+  const handleViewDocument = async (fileUrl: string) => {
     try {
+      // Extract storage path from full URL if needed
+      const storagePath = fileUrl.startsWith('http') 
+        ? fileUrl.split('/documents/')[1] 
+        : fileUrl;
+      
       const { data, error } = await supabase.storage
         .from("documents")
         .createSignedUrl(storagePath, 60); // URL valid for 60 seconds
@@ -216,8 +221,13 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
     }
   };
 
-  const handleDownloadDocument = async (storagePath: string, fileName: string) => {
+  const handleDownloadDocument = async (fileUrl: string, fileName: string) => {
     try {
+      // Extract storage path from full URL if needed
+      const storagePath = fileUrl.startsWith('http') 
+        ? fileUrl.split('/documents/')[1] 
+        : fileUrl;
+        
       const { data, error } = await supabase.storage
         .from("documents")
         .createSignedUrl(storagePath, 60); // URL valid for 60 seconds
@@ -241,10 +251,15 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
     }
   };
 
-  const handleDelete = async (documentId: string, filePath: string) => {
+  const handleDelete = async (documentId: string, fileUrl: string) => {
     try {
-      // Delete from storage (filePath is already the storage path)
-      await supabase.storage.from("documents").remove([filePath]);
+      // Extract storage path from full URL if needed
+      const storagePath = fileUrl.startsWith('http') 
+        ? fileUrl.split('/documents/')[1] 
+        : fileUrl;
+        
+      // Delete from storage
+      await supabase.storage.from("documents").remove([storagePath]);
 
       // Delete from database
       const { error } = await supabase
