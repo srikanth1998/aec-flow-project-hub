@@ -197,11 +197,15 @@ export default function FinancialExpenses() {
 
   const createCategory = async (categoryName: string) => {
     try {
+      // Get the user's organization ID first
+      const { data: orgData, error: orgError } = await supabase.rpc('get_user_organization_id');
+      if (orgError) throw orgError;
+
       const { data, error } = await supabase
         .from('expense_categories')
         .insert({
           name: categoryName,
-          organization_id: undefined // Will be set by RLS
+          organization_id: orgData
         })
         .select()
         .single();
