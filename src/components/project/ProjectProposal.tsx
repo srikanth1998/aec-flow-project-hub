@@ -9,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar, Download, Eye, Upload, X, Save } from "lucide-react";
-import { format } from "date-fns";
 
 interface ProjectProposalProps {
   projectId: string;
@@ -71,7 +70,7 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
           proposal_file_name: data.proposal_file_name || "",
           approved_by: data.approved_by || "",
           approval_date: data.approval_date || "",
-          approval_status: data.approval_status || "pending",
+          approval_status: (data.approval_status as "approved" | "pending" | "rejected") || "pending",
         });
       }
     } catch (error) {

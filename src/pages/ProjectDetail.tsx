@@ -11,6 +11,7 @@ import { ProjectServices } from "@/components/project/ProjectServices";
 import { ProjectInvoices } from "@/components/project/ProjectInvoices";
 import { ProjectExpenses } from "@/components/project/ProjectExpenses";
 import { ProjectDocuments } from "@/components/project/ProjectDocuments";
+import { ProjectProposal } from "@/components/project/ProjectProposal";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +75,10 @@ const ProjectDetail = () => {
     }
   };
 
+  const handleProjectUpdate = (updatedProject: any) => {
+    setProject(updatedProject);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -100,7 +105,7 @@ const ProjectDetail = () => {
       case "expenses":
         return <ProjectExpenses projectId={project.id} organizationId={project.organization_id} project={project} />;
       case "proposal":
-        return <div className="p-6">Proposal content coming soon...</div>;
+        return <ProjectProposal projectId={project.id} organizationId={project.organization_id} project={project} onProjectUpdate={handleProjectUpdate} />;
       case "drawings":
         return <div className="p-6">Drawings content coming soon...</div>;
       case "documents":

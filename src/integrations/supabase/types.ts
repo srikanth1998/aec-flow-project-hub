@@ -338,6 +338,60 @@ export type Database = {
           },
         ]
       }
+      project_proposals: {
+        Row: {
+          approval_date: string | null
+          approval_status: string
+          approved_by: string | null
+          created_at: string
+          id: string
+          organization_id: string
+          project_id: string
+          project_lead: string | null
+          proposal_file_name: string | null
+          proposal_file_url: string | null
+          scope_of_work: string | null
+          site_engineer: string | null
+          supervisor: string | null
+          updated_at: string
+          work_summary: string | null
+        }
+        Insert: {
+          approval_date?: string | null
+          approval_status?: string
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          organization_id: string
+          project_id: string
+          project_lead?: string | null
+          proposal_file_name?: string | null
+          proposal_file_url?: string | null
+          scope_of_work?: string | null
+          site_engineer?: string | null
+          supervisor?: string | null
+          updated_at?: string
+          work_summary?: string | null
+        }
+        Update: {
+          approval_date?: string | null
+          approval_status?: string
+          approved_by?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string
+          project_id?: string
+          project_lead?: string | null
+          proposal_file_name?: string | null
+          proposal_file_url?: string | null
+          scope_of_work?: string | null
+          site_engineer?: string | null
+          supervisor?: string | null
+          updated_at?: string
+          work_summary?: string | null
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           actual_budget: number | null
