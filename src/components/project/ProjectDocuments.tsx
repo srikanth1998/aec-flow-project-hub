@@ -66,6 +66,8 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
 
   const fetchDocuments = async () => {
     try {
+      console.log("Fetching documents for project:", projectId);
+      
       const { data, error } = await supabase
         .from("documents" as any)
         .select(`
@@ -75,7 +77,12 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      console.log("Documents query result:", { data, error });
+      
+      if (error) {
+        console.error("Documents fetch error:", error);
+        throw error;
+      }
 
       const documentsWithNames = data?.map((doc: any) => ({
         ...doc,
