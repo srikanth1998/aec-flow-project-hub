@@ -156,10 +156,8 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("documents")
-        .getPublicUrl(fileName);
+      // Store the storage path (not public URL since bucket is private)
+      const storagePath = fileName;
 
       // Insert document record
       const { error: insertError } = await supabase
@@ -171,7 +169,7 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
           category: uploadForm.category,
           description: uploadForm.description || null,
           file_name: uploadForm.file.name,
-          file_url: publicUrl,
+          file_url: storagePath, // Store storage path, not public URL
           file_type: uploadForm.file.type,
           file_size: uploadForm.file.size,
           uploaded_by: profile.id
@@ -199,11 +197,54 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
     }
   };
 
+  const handleViewDocument = async (storagePath: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(storagePath, 60); // URL valid for 60 seconds
+
+      if (error) throw error;
+      
+      window.open(data.signedUrl, '_blank');
+    } catch (error) {
+      console.error("View error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to open document",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDownloadDocument = async (storagePath: string, fileName: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .createSignedUrl(storagePath, 60); // URL valid for 60 seconds
+
+      if (error) throw error;
+
+      // Create a temporary link to download the file
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Download error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to download document",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDelete = async (documentId: string, filePath: string) => {
     try {
-      // Delete from storage
-      const fileName = filePath.split('/').slice(-3).join('/'); // Get org/project/filename part
-      await supabase.storage.from("documents").remove([fileName]);
+      // Delete from storage (filePath is already the storage path)
+      await supabase.storage.from("documents").remove([filePath]);
 
       // Delete from database
       const { error } = await supabase
@@ -361,17 +402,21 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={document.file_url} target="_blank" rel="noopener noreferrer">
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </a>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewDocument(document.file_url)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
                     </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={document.file_url} download={document.file_name}>
-                        <Download className="h-4 w-4 mr-1" />
-                        Download
-                      </a>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDownloadDocument(document.file_url, document.file_name)}
+                    >
+                      <Download className="h-4 w-4 mr-1" />
+                      Download
                     </Button>
                     <Button 
                       variant="outline" 
