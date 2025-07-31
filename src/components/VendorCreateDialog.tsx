@@ -45,20 +45,47 @@ export function VendorCreateDialog({
     categoryId: "",
   });
 
-  const createCategory = async (categoryName: string) => {
+  const createCategory = async (categoryName: string): Promise<Category | null> => {
     try {
+      // First get the user's organization_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create categories.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) {
+        toast({
+          title: "Error",
+          description: "User profile not found.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('expense_categories')
         .insert({
           name: categoryName,
-          organization_id: undefined // Will be set by RLS
+          description: `Auto-created category: ${categoryName}`,
+          organization_id: profile.organization_id
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      const newCategory = data;
+      const newCategory = data as Category;
       onCategoryCreated(newCategory);
       
       toast({
@@ -113,6 +140,32 @@ export function VendorCreateDialog({
     setIsLoading(true);
 
     try {
+      // Get the user's organization_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to create vendors.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile) {
+        toast({
+          title: "Error",
+          description: "User profile not found.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('vendors')
         .insert({
@@ -121,7 +174,7 @@ export function VendorCreateDialog({
           phone: vendorData.phone.trim() || null,
           address: vendorData.address.trim() || null,
           default_category_id: vendorData.categoryId,
-          organization_id: undefined // Will be set by RLS
+          organization_id: profile.organization_id
         })
         .select()
         .single();
