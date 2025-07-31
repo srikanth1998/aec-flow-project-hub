@@ -40,6 +40,7 @@ interface Vendor {
   id: string;
   name: string;
   default_category_id?: string;
+  type?: 'vendor' | 'project';
 }
 
 interface Category {
@@ -103,13 +104,33 @@ export default function FinancialExpenses() {
 
   const fetchVendors = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch regular vendors
+      const { data: vendorsData, error: vendorsError } = await supabase
         .from('vendors')
         .select('*')
         .order('name');
       
-      if (error) throw error;
-      setVendors(data || []);
+      if (vendorsError) throw vendorsError;
+
+      // Fetch projects to include as vendors
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, name, client_name')
+        .order('name');
+      
+      if (projectsError) throw projectsError;
+
+      // Combine vendors and projects
+      const allVendors: Vendor[] = [
+        ...(vendorsData || []).map(vendor => ({ ...vendor, type: 'vendor' as const })),
+        ...(projectsData || []).map(project => ({
+          id: project.id,
+          name: `${project.name} (${project.client_name})`,
+          type: 'project' as const
+        }))
+      ];
+
+      setVendors(allVendors);
     } catch (error) {
       console.error('Error fetching vendors:', error);
     }
@@ -360,13 +381,16 @@ export default function FinancialExpenses() {
                 <div>
                   <Label htmlFor="vendor">Vendor/Payee</Label>
                   <Combobox
-                    options={vendors.map(vendor => ({ value: vendor.id, label: vendor.name }))}
+                    options={vendors.map(vendor => ({ 
+                      value: vendor.id, 
+                      label: vendor.type === 'project' ? `📁 ${vendor.name}` : vendor.name 
+                    }))}
                     value={newExpense.vendorId}
                     onSelect={handleVendorSelect}
                     onCreateNew={handleVendorCreate}
-                    placeholder="Select vendor..."
-                    searchPlaceholder="Search vendors..."
-                    emptyText="No vendors found."
+                    placeholder="Select vendor or project..."
+                    searchPlaceholder="Search vendors and projects..."
+                    emptyText="No vendors or projects found."
                     createNewText="Create vendor"
                   />
                 </div>
