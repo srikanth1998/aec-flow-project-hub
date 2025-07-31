@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox } from "@/components/ui/combobox";
+import { VendorCreateDialog } from "@/components/VendorCreateDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,6 +78,7 @@ export default function FinancialExpenses() {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newExpense, setNewExpense] = useState({
@@ -142,7 +144,7 @@ export default function FinancialExpenses() {
         .from('vendors')
         .insert({
           name: vendorName,
-          default_category_id: categoryId,
+          default_category_id: categoryId || null,
           organization_id: undefined // Will be set by RLS
         })
         .select()
@@ -226,15 +228,8 @@ export default function FinancialExpenses() {
     }
   };
 
-  const handleVendorCreate = async (vendorName: string) => {
-    const vendor = await createVendor(vendorName, newExpense.categoryId);
-    if (vendor) {
-      setNewExpense(prev => ({
-        ...prev,
-        vendorId: vendor.id,
-        vendor: vendor.name,
-      }));
-    }
+  const handleVendorCreate = () => {
+    setIsVendorDialogOpen(true);
   };
 
   const handleCategorySelect = (categoryId: string) => {
@@ -601,6 +596,26 @@ export default function FinancialExpenses() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Vendor Creation Dialog */}
+      <VendorCreateDialog
+        open={isVendorDialogOpen}
+        onOpenChange={setIsVendorDialogOpen}
+        categories={categories}
+        onVendorCreated={(vendor) => {
+          setVendors(prev => [...prev, vendor]);
+          setNewExpense(prev => ({
+            ...prev,
+            vendorId: vendor.id,
+            vendor: vendor.name,
+            categoryId: vendor.default_category_id || "",
+            category: categories.find(c => c.id === vendor.default_category_id)?.name || "",
+          }));
+        }}
+        onCategoryCreated={(category) => {
+          setCategories(prev => [...prev, category]);
+        }}
+      />
     </div>
   );
 }
