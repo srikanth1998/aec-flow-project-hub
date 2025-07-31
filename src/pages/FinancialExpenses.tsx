@@ -40,6 +40,7 @@ interface Vendor {
   id: string;
   name: string;
   default_category_id?: string;
+  client_name?: string;
   type?: 'vendor' | 'project';
 }
 
@@ -125,7 +126,8 @@ export default function FinancialExpenses() {
         ...(vendorsData || []).map(vendor => ({ ...vendor, type: 'vendor' as const })),
         ...(projectsData || []).map(project => ({
           id: project.id,
-          name: `${project.name} (${project.client_name})`,
+          name: project.name,
+          client_name: project.client_name,
           type: 'project' as const
         }))
       ];
@@ -383,7 +385,9 @@ export default function FinancialExpenses() {
                   <Combobox
                     options={vendors.map(vendor => ({ 
                       value: vendor.id, 
-                      label: vendor.type === 'project' ? `📁 ${vendor.name}` : vendor.name 
+                      label: vendor.type === 'project' 
+                        ? `📁 ${vendor.name} (${vendor.client_name || 'No client'})` 
+                        : vendor.name 
                     }))}
                     value={newExpense.vendorId}
                     onSelect={handleVendorSelect}
