@@ -68,28 +68,45 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
     try {
       console.log("Fetching documents for project:", projectId);
       
-      const { data, error } = await supabase
+      // First get documents
+      const { data: documentsData, error: documentsError } = await supabase
         .from("documents" as any)
-        .select(`
-          *,
-          profiles!uploaded_by(first_name, last_name)
-        `)
+        .select("*")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
-      console.log("Documents query result:", { data, error });
-      
-      if (error) {
-        console.error("Documents fetch error:", error);
-        throw error;
+      if (documentsError) {
+        console.error("Documents fetch error:", documentsError);
+        throw documentsError;
       }
 
-      const documentsWithNames = data?.map((doc: any) => ({
-        ...doc,
-        uploader_name: doc.profiles 
-          ? `${doc.profiles.first_name || ""} ${doc.profiles.last_name || ""}`.trim()
-          : "Unknown"
-      })) || [];
+      // Then get profiles for uploaders
+      const uploaderIds = documentsData?.map((doc: any) => doc.uploaded_by).filter(Boolean) || [];
+      
+      let profilesData: any[] = [];
+      if (uploaderIds.length > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name")
+          .in("id", uploaderIds);
+
+        if (profilesError) {
+          console.error("Profiles fetch error:", profilesError);
+        } else {
+          profilesData = profiles || [];
+        }
+      }
+
+      // Combine data
+      const documentsWithNames = documentsData?.map((doc: any) => {
+        const profile = profilesData.find(p => p.id === doc.uploaded_by);
+        return {
+          ...doc,
+          uploader_name: profile 
+            ? `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Unknown"
+            : "Unknown"
+        };
+      }) || [];
 
       setDocuments(documentsWithNames);
     } catch (error) {
