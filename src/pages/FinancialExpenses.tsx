@@ -31,6 +31,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Combobox } from "@/components/ui/combobox";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+interface Vendor {
+  id: string;
+  name: string;
+  default_category_id?: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 interface Expense {
   id: string;
@@ -47,49 +62,9 @@ interface Expense {
   projectName?: string;
 }
 
-const mockExpenses: Expense[] = [
-  {
-    id: "1",
-    date: "2024-01-15",
-    vendor: "Office Depot",
-    description: "Office supplies and stationery",
-    category: "Office Supplies",
-    amount: 125.50,
-    paymentMethod: "Credit Card",
-    reference: "CC-001",
-    taxDeductible: true,
-  },
-  {
-    id: "2",
-    date: "2024-01-14",
-    vendor: "Fuel Station",
-    description: "Vehicle fuel for business travel",
-    category: "Travel",
-    amount: 65.00,
-    paymentMethod: "Cash",
-    reference: "CASH-002",
-    taxDeductible: true,
-    projectId: "proj-1",
-    projectName: "Downtown Office Renovation",
-  },
-];
-
-const categories = [
-  "Office Supplies",
-  "Travel",
-  "Meals & Entertainment",
-  "Equipment",
-  "Software",
-  "Professional Services",
-  "Utilities",
-  "Marketing",
-  "Insurance",
-  "Other",
-];
-
 const paymentMethods = [
   "Cash",
-  "Credit Card",
+  "Credit Card", 
   "Debit Card",
   "Check",
   "Bank Transfer",
@@ -97,20 +72,192 @@ const paymentMethods = [
 ];
 
 export default function FinancialExpenses() {
-  const [expenses, setExpenses] = useState<Expense[]>(mockExpenses);
+  const { toast } = useToast();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [newExpense, setNewExpense] = useState({
     date: new Date().toISOString().split('T')[0],
     vendor: "",
+    vendorId: "",
     description: "",
     category: "",
+    categoryId: "",
     amount: "",
     paymentMethod: "",
     reference: "",
     taxDeductible: false,
   });
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchVendors();
+    fetchCategories();
+    fetchExpenses();
+  }, []);
+
+  const fetchVendors = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setVendors(data || []);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      setCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      // For now, we'll just show empty array until we properly connect DB
+      setExpenses([]);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
+    }
+  };
+
+  const createVendor = async (vendorName: string, categoryId?: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('vendors')
+        .insert({
+          name: vendorName,
+          default_category_id: categoryId,
+          organization_id: undefined // Will be set by RLS
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newVendor = data;
+      setVendors(prev => [...prev, newVendor]);
+      
+      toast({
+        title: "Vendor Created",
+        description: `${vendorName} has been added to your vendors.`,
+      });
+
+      return newVendor;
+    } catch (error) {
+      console.error('Error creating vendor:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create vendor. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const createCategory = async (categoryName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('expense_categories')
+        .insert({
+          name: categoryName,
+          organization_id: undefined // Will be set by RLS
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newCategory = data;
+      setCategories(prev => [...prev, newCategory]);
+      
+      toast({
+        title: "Category Created",
+        description: `${categoryName} has been added to your categories.`,
+      });
+
+      return newCategory;
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create category. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
+  const handleVendorSelect = async (vendorId: string) => {
+    const vendor = vendors.find(v => v.id === vendorId);
+    if (!vendor) return;
+
+    setNewExpense(prev => ({
+      ...prev,
+      vendorId: vendor.id,
+      vendor: vendor.name,
+    }));
+
+    // Auto-select category if vendor has default category
+    if (vendor.default_category_id) {
+      const category = categories.find(c => c.id === vendor.default_category_id);
+      if (category) {
+        setNewExpense(prev => ({
+          ...prev,
+          categoryId: category.id,
+          category: category.name,
+        }));
+      }
+    }
+  };
+
+  const handleVendorCreate = async (vendorName: string) => {
+    const vendor = await createVendor(vendorName, newExpense.categoryId);
+    if (vendor) {
+      setNewExpense(prev => ({
+        ...prev,
+        vendorId: vendor.id,
+        vendor: vendor.name,
+      }));
+    }
+  };
+
+  const handleCategorySelect = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    if (!category) return;
+
+    setNewExpense(prev => ({
+      ...prev,
+      categoryId: category.id,
+      category: category.name,
+    }));
+  };
+
+  const handleCategoryCreate = async (categoryName: string) => {
+    const category = await createCategory(categoryName);
+    if (category) {
+      setNewExpense(prev => ({
+        ...prev,
+        categoryId: category.id,
+        category: category.name,
+      }));
+    }
+  };
 
   const filteredExpenses = expenses.filter((expense) => {
     const matchesSearch = 
@@ -148,8 +295,10 @@ export default function FinancialExpenses() {
     setNewExpense({
       date: new Date().toISOString().split('T')[0],
       vendor: "",
+      vendorId: "",
       description: "",
       category: "",
+      categoryId: "",
       amount: "",
       paymentMethod: "",
       reference: "",
@@ -215,11 +364,15 @@ export default function FinancialExpenses() {
                 
                 <div>
                   <Label htmlFor="vendor">Vendor/Payee</Label>
-                  <Input
-                    id="vendor"
-                    placeholder="Enter vendor name"
-                    value={newExpense.vendor}
-                    onChange={(e) => setNewExpense({ ...newExpense, vendor: e.target.value })}
+                  <Combobox
+                    options={vendors.map(vendor => ({ value: vendor.id, label: vendor.name }))}
+                    value={newExpense.vendorId}
+                    onSelect={handleVendorSelect}
+                    onCreateNew={handleVendorCreate}
+                    placeholder="Select vendor..."
+                    searchPlaceholder="Search vendors..."
+                    emptyText="No vendors found."
+                    createNewText="Create vendor"
                   />
                 </div>
 
@@ -236,18 +389,16 @@ export default function FinancialExpenses() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="category">Category</Label>
-                    <Select value={newExpense.category} onValueChange={(value) => setNewExpense({ ...newExpense, category: value })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={categories.map(category => ({ value: category.id, label: category.name }))}
+                      value={newExpense.categoryId}
+                      onSelect={handleCategorySelect}
+                      onCreateNew={handleCategoryCreate}
+                      placeholder="Select category..."
+                      searchPlaceholder="Search categories..."
+                      emptyText="No categories found."
+                      createNewText="Create category"
+                    />
                   </div>
                   <div>
                     <Label htmlFor="payment">Payment Method</Label>
@@ -366,8 +517,8 @@ export default function FinancialExpenses() {
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
                   {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                    <SelectItem key={category.id} value={category.name}>
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
