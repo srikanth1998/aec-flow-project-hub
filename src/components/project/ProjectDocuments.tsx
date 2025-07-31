@@ -234,13 +234,27 @@ export const ProjectDocuments = ({ projectId, organizationId }: ProjectDocuments
 
       if (error) throw error;
 
-      // Create a temporary link to download the file
+      // Use fetch to get the file and create a blob for download
+      const response = await fetch(data.signedUrl);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      
+      // Create a proper anchor element for download
       const link = document.createElement('a');
-      link.href = data.signedUrl;
+      link.href = url;
       link.download = fileName;
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
+      
+      // Trigger download
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      
+      // Clean up the blob URL
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Download error:", error);
       toast({
