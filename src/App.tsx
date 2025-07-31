@@ -12,6 +12,7 @@ import ActiveProjects from "./pages/ActiveProjects";
 import CompletedProjects from "./pages/CompletedProjects";
 import BudgetOverview from "./pages/BudgetOverview";
 import ProjectDetail from "./pages/ProjectDetail";
+import FinancialExpenses from "./pages/FinancialExpenses";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/projects/active" element={<ActiveProjects />} />
           <Route path="/projects/completed" element={<CompletedProjects />} />
           <Route path="/budget" element={<BudgetOverview />} />
+          <Route path="/expenses" element={<FinancialExpenses />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

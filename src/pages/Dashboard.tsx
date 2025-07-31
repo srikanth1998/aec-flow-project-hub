@@ -187,10 +187,10 @@ const Dashboard = () => {
               onClick={() => navigate("/projects")}
             />
             <ActionCard
-              title="Team Management"
-              description="Manage team members, assign roles, and track resource allocation across projects"
-              icon={<Users className="h-6 w-6" />}
-              onClick={() => navigate("/projects")}
+              title="Financial Expenses"
+              description="Track business expenses, categorize spending, and manage tax-deductible items"
+              icon={<DollarSign className="h-6 w-6" />}
+              onClick={() => navigate("/expenses")}
             />
           </div>
         </div>
