@@ -14,6 +14,7 @@ import BudgetOverview from "./pages/BudgetOverview";
 import ProjectDetail from "./pages/ProjectDetail";
 import FinancialExpenses from "./pages/FinancialExpenses";
 import NotFound from "./pages/NotFound";
+import { AuthWrapper } from "./components/AuthWrapper";
 
 const queryClient = new QueryClient();
 
@@ -26,14 +27,14 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/projects" element={<Projects />} />
-        <Route path="/projects/new" element={<CreateProject />} />
-        <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/projects/active" element={<ActiveProjects />} />
-          <Route path="/projects/completed" element={<CompletedProjects />} />
-          <Route path="/budget" element={<BudgetOverview />} />
-          <Route path="/expenses" element={<FinancialExpenses />} />
+          <Route path="/dashboard" element={<AuthWrapper><Dashboard /></AuthWrapper>} />
+        <Route path="/projects" element={<AuthWrapper><Projects /></AuthWrapper>} />
+        <Route path="/projects/new" element={<AuthWrapper><CreateProject /></AuthWrapper>} />
+        <Route path="/projects/:id" element={<AuthWrapper><ProjectDetail /></AuthWrapper>} />
+          <Route path="/projects/active" element={<AuthWrapper><ActiveProjects /></AuthWrapper>} />
+          <Route path="/projects/completed" element={<AuthWrapper><CompletedProjects /></AuthWrapper>} />
+          <Route path="/budget" element={<AuthWrapper><BudgetOverview /></AuthWrapper>} />
+          <Route path="/expenses" element={<AuthWrapper><FinancialExpenses /></AuthWrapper>} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
