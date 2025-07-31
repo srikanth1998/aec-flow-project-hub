@@ -238,8 +238,23 @@ export default function FinancialExpenses() {
       vendor: vendor.name,
     }));
 
-    // Auto-select category if vendor has default category
-    if (vendor.default_category_id) {
+    // Auto-select category based on vendor type or default category
+    if (vendor.type === 'project') {
+      // For projects, automatically set category to "Projects"
+      let projectsCategory = categories.find(c => c.name === 'Projects');
+      if (!projectsCategory) {
+        // Create "Projects" category if it doesn't exist
+        projectsCategory = await createCategory('Projects');
+      }
+      if (projectsCategory) {
+        setNewExpense(prev => ({
+          ...prev,
+          categoryId: projectsCategory.id,
+          category: projectsCategory.name,
+        }));
+      }
+    } else if (vendor.default_category_id) {
+      // For regular vendors, use their default category
       const category = categories.find(c => c.id === vendor.default_category_id);
       if (category) {
         setNewExpense(prev => ({
