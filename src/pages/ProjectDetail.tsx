@@ -12,6 +12,7 @@ import { ProjectInvoices } from "@/components/project/ProjectInvoices";
 import { ProjectExpenses } from "@/components/project/ProjectExpenses";
 import { ProjectDocuments } from "@/components/project/ProjectDocuments";
 import { ProjectProposal } from "@/components/project/ProjectProposal";
+import { ProjectDrawings } from "@/components/project/ProjectDrawings";
 
 const ProjectDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -107,7 +108,7 @@ const ProjectDetail = () => {
       case "proposal":
         return <ProjectProposal projectId={project.id} organizationId={project.organization_id} project={project} onProjectUpdate={handleProjectUpdate} />;
       case "drawings":
-        return <div className="p-6">Drawings content coming soon...</div>;
+        return <ProjectDrawings projectId={project.id} organizationId={project.organization_id} />;
       case "documents":
         return <ProjectDocuments projectId={project.id} organizationId={project.organization_id} />;
       default:

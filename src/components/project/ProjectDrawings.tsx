@@ -64,19 +64,19 @@ export const ProjectDrawings = ({ projectId, organizationId }: ProjectDrawingsPr
         .from("drawings")
         .select(`
           *,
-          uploader:profiles!drawings_uploaded_by_fkey(first_name, last_name, email)
+          uploader:profiles(first_name, last_name, email)
         `)
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const drawingsWithUploaderNames = data.map(drawing => ({
+      const drawingsWithUploaderNames = data?.map(drawing => ({
         ...drawing,
         uploader_name: drawing.uploader?.first_name && drawing.uploader?.last_name
           ? `${drawing.uploader.first_name} ${drawing.uploader.last_name}`
           : drawing.uploader?.email || "Unknown"
-      }));
+      })) || [];
 
       setDrawings(drawingsWithUploaderNames);
     } catch (error) {
