@@ -88,6 +88,7 @@ export default function FinancialExpenses() {
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedDateRange, setSelectedDateRange] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [newExpense, setNewExpense] = useState({
     date: new Date().toISOString().split('T')[0],
     vendor: "",
@@ -104,11 +105,33 @@ export default function FinancialExpenses() {
     manualTaxOverride: false,
   });
 
-  // Fetch data on component mount
+  // Fetch data on component mount and set up real-time sync
   useEffect(() => {
     fetchVendors();
     fetchCategories();
     fetchExpenses();
+
+    // Set up real-time sync for expenses
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'expenses'
+        },
+        (payload) => {
+          console.log('Real-time update:', payload);
+          // Refresh expenses when any change occurs
+          fetchExpenses();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchVendors = async () => {
@@ -163,17 +186,27 @@ export default function FinancialExpenses() {
   const fetchExpenses = async () => {
     try {
       setLoading(true);
+      setError(null);
       
-      // Fetch expenses with project names
+      // Fetch expenses with project names using the foreign key relationship
       const { data: expensesData, error: expensesError } = await supabase
         .from('expenses')
         .select(`
           *,
-          projects(name)
+          projects!inner(name)
         `)
         .order('expense_date', { ascending: false });
       
-      if (expensesError) throw expensesError;
+      if (expensesError) {
+        console.error('Error fetching expenses:', expensesError);
+        setError('Unable to load expenses. Please check your connection and try again.');
+        toast({
+          title: "Error",
+          description: "Failed to fetch expenses. Please try again.",
+          variant: "destructive",
+        });
+        throw expensesError;
+      }
 
       // Transform data to match our interface
       const transformedExpenses: Expense[] = (expensesData || []).map(expense => ({
@@ -185,7 +218,7 @@ export default function FinancialExpenses() {
         payment_method: expense.payment_method,
         receipt_url: expense.receipt_url,
         project_id: expense.project_id,
-        project_name: (expense.projects as any)?.name || 'Unknown Project',
+        project_name: expense.projects?.name || 'Unknown Project',
         organization_id: expense.organization_id,
         tax_amount: expense.tax_amount || 0,
         tax_rate: expense.tax_rate || 0,
@@ -193,13 +226,11 @@ export default function FinancialExpenses() {
       }));
 
       setExpenses(transformedExpenses);
+      setError(null);
     } catch (error) {
       console.error('Error fetching expenses:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch expenses. Please try again.",
-        variant: "destructive",
-      });
+      setExpenses([]);
+      setError('Failed to load expenses. Please refresh the page or contact support if the issue persists.');
     } finally {
       setLoading(false);
     }
@@ -814,6 +845,28 @@ export default function FinancialExpenses() {
           </CardContent>
         </Card>
 
+        {/* Error Display */}
+        {error && (
+          <Card className="border-destructive bg-destructive/5">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-destructive">
+                <div className="h-4 w-4 rounded-full bg-destructive/20 flex items-center justify-center">
+                  !
+                </div>
+                <p className="font-medium">{error}</p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-4"
+                onClick={fetchExpenses}
+              >
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Expenses Table */}
         <Card>
           <CardHeader>
@@ -840,6 +893,12 @@ export default function FinancialExpenses() {
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8">
                         Loading expenses...
+                      </TableCell>
+                    </TableRow>
+                  ) : error ? (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-destructive">
+                        Failed to load expenses. Please try again.
                       </TableCell>
                     </TableRow>
                   ) : filteredExpenses.length === 0 ? (
