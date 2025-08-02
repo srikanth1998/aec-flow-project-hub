@@ -169,9 +169,14 @@ export const ProjectDrawings = ({ projectId, organizationId }: ProjectDrawingsPr
 
   const handleDownload = async (drawing: Drawing) => {
     try {
+      // Extract the file path from the URL (everything after the bucket name)
+      const filePath = drawing.file_url.includes('/public/drawings/') 
+        ? drawing.file_url.split('/public/drawings/')[1]
+        : drawing.file_url.split('/drawings/')[1];
+      
       const { data, error } = await supabase.storage
         .from("drawings")
-        .download(drawing.file_url.split('/drawings/')[1]);
+        .download(filePath);
 
       if (error) throw error;
 
