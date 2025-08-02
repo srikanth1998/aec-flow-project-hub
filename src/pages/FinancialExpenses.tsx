@@ -69,11 +69,9 @@ interface Expense {
 
 const paymentMethods = [
   "Cash",
-  "Credit Card", 
-  "Debit Card",
-  "Check",
-  "Bank Transfer",
-  "PayPal",
+  "UPI", 
+  "Bank",
+  "Other",
 ];
 
 export default function FinancialExpenses() {
@@ -84,7 +82,7 @@ export default function FinancialExpenses() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isVendorDialogOpen, setIsVendorDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("all");
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedDateRange, setSelectedDateRange] = useState<string>("all");
   const [loading, setLoading] = useState(true);
@@ -98,6 +96,7 @@ export default function FinancialExpenses() {
     categoryId: "",
     amount: "",
     paymentMethod: "",
+    customPaymentMethod: "",
     reference: "",
     projectId: "",
     taxRate: "",
@@ -401,10 +400,10 @@ export default function FinancialExpenses() {
     return expenses.filter((expense) => {
       const matchesSearch = 
         expense.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        expense.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (expense.payment_method && expense.payment_method.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (expense.project_name && expense.project_name.toLowerCase().includes(searchTerm.toLowerCase()));
       
-      const matchesCategory = selectedCategory === "all" || expense.category === selectedCategory;
+      const matchesPaymentMethod = selectedPaymentMethod === "all" || expense.payment_method === selectedPaymentMethod;
       const matchesProject = selectedProject === "all" || expense.project_id === selectedProject;
       
       // Date range filter
@@ -417,9 +416,9 @@ export default function FinancialExpenses() {
         }
       }
       
-      return matchesSearch && matchesCategory && matchesProject && matchesDate;
+      return matchesSearch && matchesPaymentMethod && matchesProject && matchesDate;
     });
-  }, [expenses, searchTerm, selectedCategory, selectedProject, selectedDateRange]);
+  }, [expenses, searchTerm, selectedPaymentMethod, selectedProject, selectedDateRange]);
 
   // Calculate dynamic summary metrics
   const summaryMetrics = useMemo(() => {
@@ -483,7 +482,7 @@ export default function FinancialExpenses() {
   };
 
   const handleAddExpense = async () => {
-    if (!newExpense.description || !newExpense.amount || !newExpense.projectId) {
+    if (!newExpense.description || !newExpense.amount || !newExpense.projectId || !newExpense.paymentMethod) {
       toast({
         title: "Error",
         description: "Please fill in all required fields.",
@@ -491,6 +490,8 @@ export default function FinancialExpenses() {
       });
       return;
     }
+
+    const finalPaymentMethod = newExpense.paymentMethod === "Other" ? newExpense.customPaymentMethod : newExpense.paymentMethod;
     
     try {
       const amount = parseFloat(newExpense.amount);
@@ -505,7 +506,7 @@ export default function FinancialExpenses() {
           description: newExpense.description,
           category: newExpense.category,
           amount: amount,
-          payment_method: newExpense.paymentMethod || null,
+          payment_method: finalPaymentMethod || null,
           tax_rate: taxRate,
           tax_amount: taxAmount,
           manual_tax_override: newExpense.manualTaxOverride,
@@ -534,6 +535,7 @@ export default function FinancialExpenses() {
         categoryId: "",
         amount: "",
         paymentMethod: "",
+        customPaymentMethod: "",
         reference: "",
         projectId: "",
         taxRate: "",
@@ -632,25 +634,12 @@ export default function FinancialExpenses() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Combobox
-                      options={categories.map(category => ({ value: category.name, label: category.name }))}
-                      value={newExpense.category}
-                      onSelect={(value) => handleAmountOrCategoryChange('category', value)}
-                      onCreateNew={handleCategoryCreate}
-                      placeholder="Select category..."
-                      searchPlaceholder="Search categories..."
-                      emptyText="No categories found."
-                      createNewText="Create category"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="payment">Payment Method</Label>
-                    <Select value={newExpense.paymentMethod} onValueChange={(value) => setNewExpense({ ...newExpense, paymentMethod: value })}>
+                <div>
+                  <Label htmlFor="payment">Payment Method *</Label>
+                  <div className="space-y-2">
+                    <Select value={newExpense.paymentMethod} onValueChange={(value) => setNewExpense({ ...newExpense, paymentMethod: value, customPaymentMethod: "" })}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select method" />
+                        <SelectValue placeholder="Select payment method" />
                       </SelectTrigger>
                       <SelectContent>
                         {paymentMethods.map((method) => (
@@ -660,6 +649,13 @@ export default function FinancialExpenses() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {newExpense.paymentMethod === "Other" && (
+                      <Input
+                        placeholder="Enter payment method"
+                        value={newExpense.customPaymentMethod}
+                        onChange={(e) => setNewExpense({ ...newExpense, customPaymentMethod: e.target.value })}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -788,12 +784,12 @@ export default function FinancialExpenses() {
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search expenses by description, category, or project..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+                    <Input
+                      placeholder="Search expenses by description, payment method, or project..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                 </div>
               </div>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -812,16 +808,21 @@ export default function FinancialExpenses() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select value={selectedPaymentMethod} onValueChange={setSelectedPaymentMethod}>
                   <SelectTrigger className="w-full sm:w-48">
                     <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="All Categories" />
+                    <SelectValue placeholder="All Payment Methods" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.name}>
-                        {category.name}
+                    <SelectItem value="all">All Payment Methods</SelectItem>
+                    {paymentMethods.map((method) => (
+                      <SelectItem key={method} value={method}>
+                        {method}
+                      </SelectItem>
+                    ))}
+                    {Array.from(new Set(expenses.map(e => e.payment_method).filter(pm => pm && !paymentMethods.includes(pm)))).map(method => (
+                      <SelectItem key={method} value={method}>
+                        {method}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -878,32 +879,30 @@ export default function FinancialExpenses() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Vendor</TableHead>
+                    <TableHead>Payment Method</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead>Category</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead>Project</TableHead>
                     <TableHead>Tax</TableHead>
+                    <TableHead>Project</TableHead>
                     <TableHead className="w-[100px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={7} className="text-center py-8">
                         Loading expenses...
                       </TableCell>
                     </TableRow>
                   ) : error ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-destructive">
+                      <TableCell colSpan={7} className="text-center py-8 text-destructive">
                         Failed to load expenses. Please try again.
                       </TableCell>
                     </TableRow>
                   ) : filteredExpenses.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No expenses found. Add your first expense to get started.
                       </TableCell>
                     </TableRow>
@@ -914,37 +913,21 @@ export default function FinancialExpenses() {
                           {new Date(expense.expense_date).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
-                          <span className="text-muted-foreground text-sm">Project Expense</span>
+                          <Badge variant="outline">{expense.payment_method || "Not specified"}</Badge>
                         </TableCell>
                         <TableCell className="max-w-[200px] truncate">
                           {expense.description}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{expense.category}</Badge>
-                        </TableCell>
                         <TableCell className="font-medium">
                           {formatCurrency(expense.amount)}
                         </TableCell>
-                        <TableCell>
-                          {expense.payment_method || <span className="text-muted-foreground text-sm">-</span>}
+                        <TableCell className="font-mono">
+                          {formatCurrency(expense.tax_amount || 0)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {expense.project_name}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {expense.tax_amount && expense.tax_amount > 0 ? (
-                            <div className="flex flex-col">
-                              <span className="font-medium">{formatCurrency(expense.tax_amount)}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {(expense.tax_rate! * 100).toFixed(1)}%
-                                {expense.manual_tax_override && " (manual)"}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">No tax</span>
-                          )}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1">

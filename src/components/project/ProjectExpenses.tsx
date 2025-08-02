@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
     description: "",
     amount: "",
     payment_method: "",
+    custom_payment_method: "",
   });
   const [showAddRow, setShowAddRow] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
   };
 
   const handleAddExpense = async () => {
-    if (!newExpense.category || !newExpense.description || !newExpense.amount) {
+    if (!newExpense.payment_method || !newExpense.description || !newExpense.amount) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -77,6 +79,8 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
       });
       return;
     }
+
+    const finalPaymentMethod = newExpense.payment_method === "Other" ? newExpense.custom_payment_method : newExpense.payment_method;
 
     try {
       const { data, error } = await supabase
@@ -86,10 +90,10 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
             project_id: projectId,
             organization_id: organizationId,
             expense_date: newExpense.expense_date,
-            category: newExpense.category,
+            category: "Expense", // Default category since we're using payment_method as primary field
             description: newExpense.description,
             amount: parseFloat(newExpense.amount),
-            payment_method: newExpense.payment_method || null,
+            payment_method: finalPaymentMethod || null,
           },
         ])
         .select()
@@ -104,6 +108,7 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
         description: "",
         amount: "",
         payment_method: "",
+        custom_payment_method: "",
       });
       setShowAddRow(false);
 
@@ -365,10 +370,9 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead>Payment Method</TableHead>
               <TableHead>Description</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Payment Method</TableHead>
               <TableHead>Receipt</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -384,11 +388,29 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                   />
                 </TableCell>
                 <TableCell>
-                  <Input
-                    placeholder="Category"
-                    value={newExpense.category}
-                    onChange={(e) => setNewExpense({ ...newExpense, category: e.target.value })}
-                  />
+                  <div className="space-y-2">
+                    <Select
+                      value={newExpense.payment_method}
+                      onValueChange={(value) => setNewExpense({ ...newExpense, payment_method: value, custom_payment_method: "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Cash">Cash</SelectItem>
+                        <SelectItem value="UPI">UPI</SelectItem>
+                        <SelectItem value="Bank">Bank</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {newExpense.payment_method === "Other" && (
+                      <Input
+                        placeholder="Enter payment method"
+                        value={newExpense.custom_payment_method}
+                        onChange={(e) => setNewExpense({ ...newExpense, custom_payment_method: e.target.value })}
+                      />
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Input
@@ -404,13 +426,6 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                     placeholder="0.00"
                     value={newExpense.amount}
                     onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    placeholder="Payment Method"
-                    value={newExpense.payment_method}
-                    onChange={(e) => setNewExpense({ ...newExpense, payment_method: e.target.value })}
                   />
                 </TableCell>
                 <TableCell>
@@ -434,6 +449,7 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                           description: "",
                           amount: "",
                           payment_method: "",
+                          custom_payment_method: "",
                         });
                       }}
                     >
@@ -458,12 +474,31 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                 </TableCell>
                 <TableCell>
                   {editingExpense?.id === expense.id ? (
-                    <Input
-                      value={editingExpense.category}
-                      onChange={(e) => setEditingExpense({ ...editingExpense, category: e.target.value })}
-                    />
+                    <div className="space-y-2">
+                      <Select
+                        value={editingExpense.payment_method || ""}
+                        onValueChange={(value) => setEditingExpense({ ...editingExpense, payment_method: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Cash">Cash</SelectItem>
+                          <SelectItem value="UPI">UPI</SelectItem>
+                          <SelectItem value="Bank">Bank</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {editingExpense.payment_method === "Other" && (
+                        <Input
+                          placeholder="Enter custom payment method"
+                          value=""
+                          onChange={(e) => setEditingExpense({ ...editingExpense, payment_method: e.target.value })}
+                        />
+                      )}
+                    </div>
                   ) : (
-                    expense.category
+                    expense.payment_method || "-"
                   )}
                 </TableCell>
                 <TableCell>
@@ -486,16 +521,6 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                     />
                   ) : (
                     formatCurrency(expense.amount)
-                  )}
-                </TableCell>
-                <TableCell>
-                  {editingExpense?.id === expense.id ? (
-                    <Input
-                      value={editingExpense.payment_method || ""}
-                      onChange={(e) => setEditingExpense({ ...editingExpense, payment_method: e.target.value })}
-                    />
-                  ) : (
-                    expense.payment_method || "-"
                   )}
                 </TableCell>
                 <TableCell>
@@ -591,7 +616,7 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
             ))}
             {expenses.length === 0 && !showAddRow && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   No expenses recorded yet
                 </TableCell>
               </TableRow>
