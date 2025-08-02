@@ -130,7 +130,6 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
         organization_id: organizationId,
         ...proposalData,
         approval_date: proposalData.approval_date || null,
-        estimated_budget: projectData.estimated_budget ? parseFloat(projectData.estimated_budget) : null,
       };
 
       let result;
