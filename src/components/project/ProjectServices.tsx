@@ -19,6 +19,7 @@ interface Service {
   unit_price: number;
   unit: string;
   payment_status: string;
+  project_id: string;
 }
 
 interface ProjectServicesProps {
@@ -49,7 +50,7 @@ export const ProjectServices = ({ organizationId, projectId }: ProjectServicesPr
 
   useEffect(() => {
     fetchServices();
-  }, [organizationId]);
+  }, [organizationId, projectId]);
 
   const fetchServices = async () => {
     try {
@@ -57,6 +58,7 @@ export const ProjectServices = ({ organizationId, projectId }: ProjectServicesPr
         .from("services")
         .select("*")
         .eq("organization_id", organizationId)
+        .eq("project_id", projectId)
         .order("name");
 
       if (error) throw error;
@@ -93,6 +95,7 @@ export const ProjectServices = ({ organizationId, projectId }: ProjectServicesPr
         unit: formData.unit,
         payment_status: formData.payment_status,
         organization_id: organizationId,
+        project_id: projectId,
       };
 
       if (editingService) {

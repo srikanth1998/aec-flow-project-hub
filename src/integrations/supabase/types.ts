@@ -568,6 +568,7 @@ export type Database = {
           name: string
           organization_id: string
           payment_status: string | null
+          project_id: string | null
           unit: string | null
           unit_price: number
           updated_at: string
@@ -579,6 +580,7 @@ export type Database = {
           name: string
           organization_id: string
           payment_status?: string | null
+          project_id?: string | null
           unit?: string | null
           unit_price: number
           updated_at?: string
@@ -590,11 +592,20 @@ export type Database = {
           name?: string
           organization_id?: string
           payment_status?: string | null
+          project_id?: string | null
           unit?: string | null
           unit_price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_assignments: {
         Row: {
