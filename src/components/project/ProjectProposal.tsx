@@ -530,12 +530,15 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
                     className="hidden"
                     id="proposal-upload"
                   />
-                  <Label htmlFor="proposal-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" className="w-full">
-                      <Upload className="h-4 w-4 mr-2" />
-                      {proposalData.proposal_file_name ? "Replace Document" : "Upload Document"}
-                    </Button>
-                  </Label>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full" 
+                    onClick={() => document.getElementById('proposal-upload')?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {proposalData.proposal_file_name ? "Replace Document" : "Upload Document"}
+                  </Button>
                 </div>
               </div>
             </div>
