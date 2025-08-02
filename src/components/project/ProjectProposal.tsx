@@ -31,7 +31,7 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
   });
   const [proposalData, setProposalData] = useState({
     work_summary: "",
-    scope_of_work: "",
+    scope_of_work: [] as string[],
     project_lead: "",
     site_engineer: "",
     supervisor: "",
