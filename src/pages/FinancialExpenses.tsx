@@ -169,7 +169,7 @@ export default function FinancialExpenses() {
         .from('expenses')
         .select(`
           *,
-          projects!inner(name)
+          projects(name)
         `)
         .order('expense_date', { ascending: false });
       
@@ -185,7 +185,7 @@ export default function FinancialExpenses() {
         payment_method: expense.payment_method,
         receipt_url: expense.receipt_url,
         project_id: expense.project_id,
-        project_name: expense.projects?.name,
+        project_name: (expense.projects as any)?.name || 'Unknown Project',
         organization_id: expense.organization_id,
         tax_amount: expense.tax_amount || 0,
         tax_rate: expense.tax_rate || 0,

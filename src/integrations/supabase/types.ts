@@ -153,10 +153,13 @@ export type Database = {
           description: string
           expense_date: string
           id: string
+          manual_tax_override: boolean | null
           organization_id: string
           payment_method: string | null
           project_id: string
           receipt_url: string | null
+          tax_amount: number | null
+          tax_rate: number | null
           updated_at: string
         }
         Insert: {
@@ -166,10 +169,13 @@ export type Database = {
           description: string
           expense_date?: string
           id?: string
+          manual_tax_override?: boolean | null
           organization_id: string
           payment_method?: string | null
           project_id: string
           receipt_url?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
           updated_at?: string
         }
         Update: {
@@ -179,10 +185,13 @@ export type Database = {
           description?: string
           expense_date?: string
           id?: string
+          manual_tax_override?: boolean | null
           organization_id?: string
           payment_method?: string | null
           project_id?: string
           receipt_url?: string | null
+          tax_amount?: number | null
+          tax_rate?: number | null
           updated_at?: string
         }
         Relationships: []
