@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Download, Eye, Upload, X, Save } from "lucide-react";
+import { Calendar, Download, Eye, Upload, X, Save, Plus, Trash2 } from "lucide-react";
 
 interface ProjectProposalProps {
   projectId: string;
@@ -62,7 +62,7 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
         setProposal(data);
         setProposalData({
           work_summary: data.work_summary || "",
-          scope_of_work: data.scope_of_work || "",
+          scope_of_work: Array.isArray(data.scope_of_work) ? data.scope_of_work : (data.scope_of_work ? [data.scope_of_work] : [""]),
           project_lead: data.project_lead || "",
           site_engineer: data.site_engineer || "",
           supervisor: data.supervisor || "",
@@ -271,6 +271,27 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
     }
   };
 
+  const addTask = () => {
+    setProposalData(prev => ({
+      ...prev,
+      scope_of_work: [...prev.scope_of_work, ""]
+    }));
+  };
+
+  const updateTask = (index: number, value: string) => {
+    setProposalData(prev => ({
+      ...prev,
+      scope_of_work: prev.scope_of_work.map((task, i) => i === index ? value : task)
+    }));
+  };
+
+  const removeTask = (index: number) => {
+    setProposalData(prev => ({
+      ...prev,
+      scope_of_work: prev.scope_of_work.filter((_, i) => i !== index)
+    }));
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case "approved": return "default";
@@ -393,14 +414,52 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
             </div>
             
             <div>
-              <Label htmlFor="scope-work">Scope of Work</Label>
-              <Textarea
-                id="scope-work"
-                value={proposalData.scope_of_work}
-                onChange={(e) => setProposalData(prev => ({ ...prev, scope_of_work: e.target.value }))}
-                placeholder="• Task 1&#10;• Task 2&#10;• Task 3"
-                rows={6}
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label>Scope of Work</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addTask}
+                  className="h-8"
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Task
+                </Button>
+              </div>
+              <div className="space-y-2">
+                {proposalData.scope_of_work.length === 0 ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addTask}
+                    className="w-full h-12 border-dashed"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add your first task
+                  </Button>
+                ) : (
+                  proposalData.scope_of_work.map((task, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <Input
+                        value={task}
+                        onChange={(e) => updateTask(index, e.target.value)}
+                        placeholder={`Task ${index + 1}`}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeTask(index)}
+                        className="h-10 w-10 p-0"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

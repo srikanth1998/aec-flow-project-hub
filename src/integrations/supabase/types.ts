@@ -350,7 +350,7 @@ export type Database = {
           project_lead: string | null
           proposal_file_name: string | null
           proposal_file_url: string | null
-          scope_of_work: string | null
+          scope_of_work: string[] | null
           site_engineer: string | null
           supervisor: string | null
           updated_at: string
@@ -367,7 +367,7 @@ export type Database = {
           project_lead?: string | null
           proposal_file_name?: string | null
           proposal_file_url?: string | null
-          scope_of_work?: string | null
+          scope_of_work?: string[] | null
           site_engineer?: string | null
           supervisor?: string | null
           updated_at?: string
@@ -384,7 +384,7 @@ export type Database = {
           project_lead?: string | null
           proposal_file_name?: string | null
           proposal_file_url?: string | null
-          scope_of_work?: string | null
+          scope_of_work?: string[] | null
           site_engineer?: string | null
           supervisor?: string | null
           updated_at?: string
