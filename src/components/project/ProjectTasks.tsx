@@ -592,21 +592,12 @@ export const ProjectTasks = ({ projectId }: ProjectTasksProps) => {
                         </SelectContent>
                       </Select>
                     ) : key === 'assigned_user' ? (
-                      <Select
+                      <Input
                         value={newRow.assigned_user}
-                        onValueChange={(value) => setNewRow({ ...newRow, assigned_user: value })}
-                      >
-                        <SelectTrigger className="border-0 bg-transparent h-auto p-0">
-                          <SelectValue placeholder="Select user" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {profiles.map((profile) => (
-                            <SelectItem key={profile.id} value={profile.id}>
-                              {profile.first_name} {profile.last_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(e) => setNewRow({ ...newRow, assigned_user: e.target.value })}
+                        placeholder="Enter user name"
+                        className="border-0 bg-transparent p-0 h-auto focus-visible:ring-1 w-20"
+                      />
                     ) : (
                       <Input
                         value={newRow[key] || ""}
