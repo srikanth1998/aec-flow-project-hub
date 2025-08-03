@@ -37,10 +37,13 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
     amount: "",
     payment_method: "",
     custom_payment_method: "",
+    receipt_url: "",
   });
   const [showAddRow, setShowAddRow] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [newExpenseFile, setNewExpenseFile] = useState<File | null>(null);
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
+  const newExpenseFileInputRef = useRef<HTMLInputElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -70,6 +73,69 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
     }
   };
 
+  const handleNewExpenseFileUpload = async (file: File) => {
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Error",
+        description: "Only PNG, JPG, and PDF files are allowed",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "File size must be less than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading("new-expense");
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("User not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const tempId = Date.now().toString();
+      const fileName = `${userData.user.id}/temp-${tempId}/receipt.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      setNewExpense({ ...newExpense, receipt_url: publicUrl });
+      setNewExpenseFile(file);
+
+      toast({
+        title: "Success",
+        description: "Receipt uploaded successfully",
+      });
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to upload receipt",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const handleAddExpense = async () => {
     if (!newExpense.payment_method || !newExpense.description || !newExpense.amount) {
       toast({
@@ -94,12 +160,47 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
             description: newExpense.description,
             amount: parseFloat(newExpense.amount),
             payment_method: finalPaymentMethod || null,
+            receipt_url: newExpense.receipt_url || null,
           },
         ])
         .select()
         .single();
 
       if (error) throw error;
+
+      // If we have a receipt, update the file path to include the actual expense ID
+      if (newExpense.receipt_url && newExpenseFile) {
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user) {
+          const fileExt = newExpenseFile.name.split('.').pop();
+          const newFileName = `${userData.user.id}/${data.id}/receipt.${fileExt}`;
+          
+          // Upload to the final location
+          await supabase.storage
+            .from('receipts')
+            .upload(newFileName, newExpenseFile, { upsert: true });
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('receipts')
+            .getPublicUrl(newFileName);
+
+          // Update the expense with the new URL
+          await supabase
+            .from('expenses')
+            .update({ receipt_url: publicUrl })
+            .eq('id', data.id);
+
+          // Remove the temporary file
+          const tempPath = newExpense.receipt_url.split('/receipts/')[1];
+          if (tempPath) {
+            await supabase.storage
+              .from('receipts')
+              .remove([tempPath]);
+          }
+
+          data.receipt_url = publicUrl;
+        }
+      }
 
       setExpenses([data, ...expenses]);
       setNewExpense({
@@ -109,7 +210,9 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
         amount: "",
         payment_method: "",
         custom_payment_method: "",
+        receipt_url: "",
       });
+      setNewExpenseFile(null);
       setShowAddRow(false);
 
       toast({
@@ -429,9 +532,61 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                   />
                 </TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" disabled>
-                    <Upload className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {newExpense.receipt_url ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(newExpense.receipt_url, '_blank')}
+                          className="flex items-center gap-1"
+                        >
+                          {isImage(newExpense.receipt_url) ? (
+                            <Eye className="h-3 w-3" />
+                          ) : (
+                            <FileText className="h-3 w-3" />
+                          )}
+                          <span className="text-xs truncate max-w-16">
+                            {getFileName(newExpense.receipt_url)}
+                          </span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setNewExpense({ ...newExpense, receipt_url: "" });
+                            setNewExpenseFile(null);
+                          }}
+                          className="p-1"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          ref={newExpenseFileInputRef}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleNewExpenseFileUpload(file);
+                          }}
+                          accept=".png,.jpg,.jpeg,.pdf"
+                          className="hidden"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => newExpenseFileInputRef.current?.click()}
+                          disabled={uploading === "new-expense"}
+                          className="flex items-center gap-1"
+                        >
+                          <Upload className="h-3 w-3" />
+                          {uploading === "new-expense" ? 'Uploading...' : 'Upload'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
@@ -450,7 +605,9 @@ export const ProjectExpenses = ({ organizationId, projectId, project }: ProjectE
                           amount: "",
                           payment_method: "",
                           custom_payment_method: "",
+                          receipt_url: "",
                         });
+                        setNewExpenseFile(null);
                       }}
                     >
                       Cancel
