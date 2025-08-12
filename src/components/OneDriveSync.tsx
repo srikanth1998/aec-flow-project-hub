@@ -45,13 +45,17 @@ export function OneDriveSync() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  console.log('🎯 OneDriveSync component mounted');
+
   useEffect(() => {
+    console.log('🎯 OneDriveSync useEffect running...');
     checkConnection();
     handleAuthCallback();
   }, []);
 
   useEffect(() => {
     if (connection) {
+      console.log('🎯 Connection found, loading files...');
       loadFiles();
     }
   }, [connection]);
@@ -264,7 +268,14 @@ export function OneDriveSync() {
             </AlertDescription>
           </Alert>
           <div className="space-y-2">
-            <Button onClick={connectToOneDrive} disabled={isLoading} className="w-full">
+            <Button 
+              onClick={() => {
+                console.log('🎯 Connect OneDrive button clicked!');
+                connectToOneDrive();
+              }} 
+              disabled={isLoading} 
+              className="w-full"
+            >
               {isLoading ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               ) : (
