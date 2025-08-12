@@ -101,7 +101,10 @@ export function OneDriveSync() {
     const code = urlParams.get('code');
     const state = urlParams.get('state'); // organization_id
 
+    console.log('OneDrive callback check:', { code: !!code, state: !!state });
+
     if (code && state) {
+      console.log('Processing OneDrive callback...');
       exchangeCodeForToken(code, state);
       // Clean up URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -111,12 +114,16 @@ export function OneDriveSync() {
   const connectToOneDrive = async () => {
     setIsLoading(true);
     try {
+      console.log('Starting OneDrive connection...');
+      
       const { data: profile } = await supabase
         .from('profiles')
         .select('organization_id')
         .single();
 
       if (!profile) throw new Error('No profile found');
+
+      console.log('Profile found, getting auth URL...');
 
       const { data, error } = await supabase.functions.invoke('onedrive-sync', {
         body: {
@@ -127,6 +134,8 @@ export function OneDriveSync() {
 
       if (error) throw error;
 
+      console.log('Auth URL received, redirecting...');
+      
       // Redirect to Microsoft OAuth
       window.location.href = data.authUrl;
     } catch (error) {
