@@ -9,6 +9,17 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Check for OneDrive callback first
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state'); // organization_id
+
+    if (code && state) {
+      // OneDrive callback - redirect to projects page to handle
+      navigate('/projects?code=' + code + '&state=' + state);
+      return;
+    }
+
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
