@@ -132,15 +132,26 @@ export function OneDriveSync() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Edge function error:', error);
+        throw error;
+      }
 
-      console.log('Auth URL received, redirecting...');
+      console.log('Auth URL received:', data.authUrl);
       
-      // Redirect to Microsoft OAuth
-      window.location.href = data.authUrl;
+      // Try different redirect approaches
+      try {
+        console.log('Attempting redirect...');
+        window.location.href = data.authUrl;
+      } catch (redirectError) {
+        console.error('Redirect failed:', redirectError);
+        // Fallback: open in new tab
+        window.open(data.authUrl, '_blank');
+        toast.info('OneDrive authorization opened in new tab. Please complete the process there.');
+      }
     } catch (error) {
       console.error('Connect error:', error);
-      toast.error('Failed to connect to OneDrive');
+      toast.error(`Failed to connect to OneDrive: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
