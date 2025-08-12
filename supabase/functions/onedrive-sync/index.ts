@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
       case 'get_auth_url': {
         const clientId = Deno.env.get('MICROSOFT_CLIENT_ID');
         const tenantId = Deno.env.get('MICROSOFT_TENANT_ID') || 'common';
-        const redirectUri = `${req.headers.get('origin')}/projects`;
+        const redirectUri = `${req.headers.get('origin')}/`;
         
         const scopes = encodeURIComponent('Files.Read Files.Read.All Sites.Read.All offline_access');
         const authUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${scopes}&state=${organizationId}`;
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
         const clientId = Deno.env.get('MICROSOFT_CLIENT_ID');
         const clientSecret = Deno.env.get('MICROSOFT_CLIENT_SECRET');
         const tenantId = Deno.env.get('MICROSOFT_TENANT_ID') || 'common';
-        const redirectUri = `${req.headers.get('origin')}/projects`;
+        const redirectUri = `${req.headers.get('origin')}/`;
 
         const tokenResponse = await fetch(`https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`, {
           method: 'POST',
