@@ -114,16 +114,18 @@ export function OneDriveSync() {
   const connectToOneDrive = async () => {
     setIsLoading(true);
     try {
-      console.log('Starting OneDrive connection...');
+      console.log('🔄 Starting OneDrive connection...');
       
       const { data: profile } = await supabase
         .from('profiles')
         .select('organization_id')
         .single();
 
-      if (!profile) throw new Error('No profile found');
+      if (!profile?.organization_id) {
+        throw new Error('No organization found. Please ensure your profile is set up correctly.');
+      }
 
-      console.log('Profile found, getting auth URL...');
+      console.log('✅ Profile found, organization ID:', profile.organization_id);
 
       const { data, error } = await supabase.functions.invoke('onedrive-sync', {
         body: {
@@ -133,25 +135,44 @@ export function OneDriveSync() {
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        throw error;
+        console.error('❌ Edge function error:', error);
+        throw new Error(`Edge function error: ${error.message || 'Unknown error'}`);
       }
 
-      console.log('Auth URL received:', data.authUrl);
-      
-      // Try different redirect approaches
-      try {
-        console.log('Attempting redirect...');
-        window.location.href = data.authUrl;
-      } catch (redirectError) {
-        console.error('Redirect failed:', redirectError);
-        // Fallback: open in new tab
-        window.open(data.authUrl, '_blank');
-        toast.info('OneDrive authorization opened in new tab. Please complete the process there.');
+      if (!data?.authUrl) {
+        console.error('❌ No auth URL received:', data);
+        throw new Error('No authorization URL received from server');
       }
+
+      console.log('🔗 Auth URL received:', data.authUrl);
+      console.log('🚀 Click here to authorize manually if redirect fails:', data.authUrl);
+      
+      // Enhanced redirect handling
+      try {
+        console.log('🔄 Attempting automatic redirect...');
+        
+        // Set a timeout to catch redirect failures
+        setTimeout(() => {
+          console.log('⚠️ Redirect may have failed. Try the manual link above.');
+          toast.error('Automatic redirect failed. Please check the console for a manual link.');
+        }, 2000);
+        
+        window.location.href = data.authUrl;
+        
+      } catch (redirectError) {
+        console.error('❌ Automatic redirect failed:', redirectError);
+        console.log('🔗 Please click this link manually:', data.authUrl);
+        
+        // Try opening in same window
+        window.open(data.authUrl, '_self');
+        
+        toast.error('Please check the browser console for the authorization link and click it manually.');
+      }
+      
     } catch (error) {
-      console.error('Connect error:', error);
-      toast.error(`Failed to connect to OneDrive: ${error.message || 'Unknown error'}`);
+      console.error('❌ Connection error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      toast.error(`Failed to connect to OneDrive: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -242,14 +263,19 @@ export function OneDriveSync() {
               Files will be parsed to extract client and project information.
             </AlertDescription>
           </Alert>
-          <Button onClick={connectToOneDrive} disabled={isLoading}>
-            {isLoading ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Cloud className="h-4 w-4 mr-2" />
-            )}
-            Connect OneDrive
-          </Button>
+          <div className="space-y-2">
+            <Button onClick={connectToOneDrive} disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Cloud className="h-4 w-4 mr-2" />
+              )}
+              Connect OneDrive
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              If the automatic redirect doesn't work, check browser console for the manual authorization link.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
