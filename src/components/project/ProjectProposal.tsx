@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Download, Eye, Upload, X, Save, Plus, Trash2 } from "lucide-react";
+import { Calendar, Download, Eye, Upload, X, Save, Plus, Trash2, FileText } from "lucide-react";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType } from "docx";
+import { saveAs } from "file-saver";
 
 interface ProjectProposalProps {
   projectId: string;
@@ -299,6 +301,244 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
     }
   };
 
+  const createWordProposal = async () => {
+    try {
+      setSaving(true);
+      
+      // Create a new Word document
+      const doc = new Document({
+        sections: [
+          {
+            children: [
+              // Title
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "PROJECT PROPOSAL",
+                    bold: true,
+                    size: 32,
+                  }),
+                ],
+                heading: HeadingLevel.TITLE,
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 400 },
+              }),
+              
+              // Project Title
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: projectData.name || "Untitled Project",
+                    bold: true,
+                    size: 28,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_1,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              // Project Information Section
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "PROJECT INFORMATION",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              // Project details table
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Client Name:" })],
+                        width: { size: 30, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: projectData.client_name || "N/A" })],
+                        width: { size: 70, type: WidthType.PERCENTAGE },
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Location:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: projectData.project_address || "N/A" })],
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Start Date:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: projectData.start_date || "TBD" })],
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Completion Date:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: projectData.estimated_completion_date || "TBD" })],
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Estimated Budget:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: projectData.estimated_budget ? `$${projectData.estimated_budget}` : "TBD" })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+
+              // Work Summary Section
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "WORK SUMMARY",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              new Paragraph({
+                text: proposalData.work_summary || "Work summary to be provided.",
+                spacing: { after: 200 },
+              }),
+
+              // Scope of Work Section
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "SCOPE OF WORK",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              // Scope of work items
+              ...proposalData.scope_of_work
+                .filter(task => task.trim() !== "")
+                .map((task, index) => 
+                  new Paragraph({
+                    text: `${index + 1}. ${task}`,
+                    spacing: { after: 100 },
+                  })
+                ),
+
+              // Team Assignment Section
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: "TEAM ASSIGNMENT",
+                    bold: true,
+                    size: 24,
+                  }),
+                ],
+                heading: HeadingLevel.HEADING_2,
+                spacing: { before: 400, after: 200 },
+              }),
+
+              new Table({
+                width: { size: 100, type: WidthType.PERCENTAGE },
+                rows: [
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Project Lead:" })],
+                        width: { size: 30, type: WidthType.PERCENTAGE },
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: proposalData.project_lead || "TBD" })],
+                        width: { size: 70, type: WidthType.PERCENTAGE },
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Site Engineer:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: proposalData.site_engineer || "TBD" })],
+                      }),
+                    ],
+                  }),
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        children: [new Paragraph({ text: "Supervisor:" })],
+                      }),
+                      new TableCell({
+                        children: [new Paragraph({ text: proposalData.supervisor || "TBD" })],
+                      }),
+                    ],
+                  }),
+                ],
+              }),
+
+              // Footer
+              new Paragraph({
+                text: "",
+                spacing: { before: 800 },
+              }),
+
+              new Paragraph({
+                text: `Generated on ${new Date().toLocaleDateString()}`,
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 400 },
+              }),
+            ],
+          },
+        ],
+      });
+
+      // Generate and download the Word document
+      const buffer = await Packer.toBuffer(doc);
+      const fileName = `${projectData.name || 'Proposal'}_${new Date().toISOString().split('T')[0]}.docx`;
+      
+      saveAs(new Blob([buffer]), fileName);
+      
+      toast({
+        title: "Success",
+        description: "Word proposal document created and downloaded",
+      });
+    } catch (error) {
+      console.error("Error creating Word document:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create Word document",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6 flex items-center justify-center">
@@ -507,6 +747,24 @@ export const ProjectProposal = ({ projectId, organizationId, project, onProjectU
             <CardTitle>Document & Approval</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label className="text-base font-semibold">Create New Proposal</Label>
+              <div className="space-y-2">
+                <Button 
+                  type="button" 
+                  onClick={createWordProposal} 
+                  disabled={saving}
+                  className="w-full"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Create Word Proposal
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Generate a professional Word document with all your proposal data
+                </p>
+              </div>
+            </div>
+
             <div>
               <Label>Proposal Document</Label>
               <div className="space-y-2">
