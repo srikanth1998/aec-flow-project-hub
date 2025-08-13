@@ -19,8 +19,8 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
 
 
   const createWordProposal = async () => {
-    alert('Button clicked! Check console now...');
     console.log('🚀 Starting Word document creation...');
+    
     try {
       setSaving(true);
       console.log('📋 Project data:', project);
@@ -84,17 +84,12 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
       console.log('✅ Document object created successfully');
 
       // Generate and download the Word document
-      console.log('📦 Converting document to buffer...');
-      const buffer = await Packer.toBuffer(doc);
-      console.log('✅ Buffer created successfully, size:', buffer.byteLength);
+      console.log('📦 Converting document to blob...');
+      const blob = await Packer.toBlob(doc);
+      console.log('✅ Blob created successfully, size:', blob.size);
       
       const fileName = `${project?.name || 'Proposal'}_${new Date().toISOString().split('T')[0]}.docx`;
       console.log('💾 Saving file:', fileName);
-      
-      const blob = new Blob([buffer], { 
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-      });
-      console.log('📄 Blob created:', blob.size, 'bytes');
       
       saveAs(blob, fileName);
       console.log('✅ File saved successfully');
