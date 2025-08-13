@@ -19,19 +19,24 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
 
 
   const createWordProposal = async () => {
+    console.log('🚀 Starting Word document creation...');
+    
     try {
-      console.log('🚀 Starting Word document creation...');
       setSaving(true);
-      
       console.log('📋 Project data:', project);
       
-      // Create a new Word document
-      console.log('📄 Creating Document object...');
+      // Test basic imports first
+      console.log('🔍 Testing imports...');
+      console.log('Document:', typeof Document);
+      console.log('Packer:', typeof Packer);
+      console.log('saveAs:', typeof saveAs);
+      
+      // Create a simple Word document first
+      console.log('📄 Creating simple Document object...');
       const doc = new Document({
         sections: [
           {
             children: [
-              // Title
               new Paragraph({
                 children: [
                   new TextRun({
@@ -45,7 +50,6 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
                 spacing: { after: 400 },
               }),
               
-              // Project Title
               new Paragraph({
                 children: [
                   new TextRun({
@@ -58,174 +62,18 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
                 spacing: { before: 400, after: 200 },
               }),
 
-              // Project Information Section
               new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "PROJECT INFORMATION",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 400, after: 200 },
-              }),
-
-              // Project details table
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Client Name:" })],
-                        width: { size: 30, type: WidthType.PERCENTAGE },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: project?.client_name || "N/A" })],
-                        width: { size: 70, type: WidthType.PERCENTAGE },
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Location:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: project?.project_address || "N/A" })],
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Start Date:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: project?.start_date || "TBD" })],
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Completion Date:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: project?.estimated_completion_date || "TBD" })],
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Estimated Budget:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: project?.estimated_budget ? `$${project.estimated_budget}` : "TBD" })],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Work Summary Section
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "WORK SUMMARY",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 400, after: 200 },
-              }),
-
-              new Paragraph({
-                text: "Work summary to be provided.",
-                spacing: { after: 200 },
-              }),
-
-              // Scope of Work Section
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "SCOPE OF WORK",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 400, after: 200 },
-              }),
-
-              new Paragraph({
-                text: "Scope of work to be defined.",
+                text: `Client: ${project?.client_name || "N/A"}`,
                 spacing: { after: 100 },
               }),
 
-              // Team Assignment Section
               new Paragraph({
-                children: [
-                  new TextRun({
-                    text: "TEAM ASSIGNMENT",
-                    bold: true,
-                    size: 24,
-                  }),
-                ],
-                heading: HeadingLevel.HEADING_2,
-                spacing: { before: 400, after: 200 },
-              }),
-
-              new Table({
-                width: { size: 100, type: WidthType.PERCENTAGE },
-                rows: [
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Project Lead:" })],
-                        width: { size: 30, type: WidthType.PERCENTAGE },
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: "TBD" })],
-                        width: { size: 70, type: WidthType.PERCENTAGE },
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Site Engineer:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: "TBD" })],
-                      }),
-                    ],
-                  }),
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        children: [new Paragraph({ text: "Supervisor:" })],
-                      }),
-                      new TableCell({
-                        children: [new Paragraph({ text: "TBD" })],
-                      }),
-                    ],
-                  }),
-                ],
-              }),
-
-              // Footer
-              new Paragraph({
-                text: "",
-                spacing: { before: 800 },
+                text: `Location: ${project?.project_address || "N/A"}`,
+                spacing: { after: 100 },
               }),
 
               new Paragraph({
                 text: `Generated on ${new Date().toLocaleDateString()}`,
-                alignment: AlignmentType.CENTER,
                 spacing: { before: 400 },
               }),
             ],
@@ -243,21 +91,34 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
       const fileName = `${project?.name || 'Proposal'}_${new Date().toISOString().split('T')[0]}.docx`;
       console.log('💾 Saving file:', fileName);
       
-      saveAs(new Blob([buffer]), fileName);
+      const blob = new Blob([buffer], { 
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
+      });
+      console.log('📄 Blob created:', blob.size, 'bytes');
+      
+      saveAs(blob, fileName);
       console.log('✅ File saved successfully');
       
       toast({
         title: "Success",
         description: "Word proposal document created and downloaded",
       });
+      
     } catch (error) {
-      console.error("Error creating Word document:", error);
+      console.error("❌ Error creating Word document:", error);
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      
       toast({
         title: "Error",
-        description: "Failed to create Word document",
+        description: `Failed to create Word document: ${error.message}`,
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Finishing document creation process');
       setSaving(false);
     }
   };
