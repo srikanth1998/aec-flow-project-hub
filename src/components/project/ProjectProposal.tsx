@@ -20,9 +20,13 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
 
   const createWordProposal = async () => {
     try {
+      console.log('🚀 Starting Word document creation...');
       setSaving(true);
       
+      console.log('📋 Project data:', project);
+      
       // Create a new Word document
+      console.log('📄 Creating Document object...');
       const doc = new Document({
         sections: [
           {
@@ -229,11 +233,18 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
         ],
       });
 
+      console.log('✅ Document object created successfully');
+
       // Generate and download the Word document
+      console.log('📦 Converting document to buffer...');
       const buffer = await Packer.toBuffer(doc);
+      console.log('✅ Buffer created successfully, size:', buffer.byteLength);
+      
       const fileName = `${project?.name || 'Proposal'}_${new Date().toISOString().split('T')[0]}.docx`;
+      console.log('💾 Saving file:', fileName);
       
       saveAs(new Blob([buffer]), fileName);
+      console.log('✅ File saved successfully');
       
       toast({
         title: "Success",
