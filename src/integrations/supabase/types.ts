@@ -315,6 +315,102 @@ export type Database = {
           },
         ]
       }
+      onedrive_connections: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          folder_path: string | null
+          id: string
+          last_sync_at: string | null
+          organization_id: string
+          refresh_token: string | null
+          sync_enabled: boolean | null
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          folder_path?: string | null
+          id?: string
+          last_sync_at?: string | null
+          organization_id: string
+          refresh_token?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          folder_path?: string | null
+          id?: string
+          last_sync_at?: string | null
+          organization_id?: string
+          refresh_token?: string | null
+          sync_enabled?: boolean | null
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      onedrive_files: {
+        Row: {
+          created_at: string
+          download_url: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          modified_at: string | null
+          onedrive_file_id: string
+          organization_id: string
+          parsed_client_name: string | null
+          parsed_project_name: string | null
+          project_id: string | null
+          sync_status: string | null
+          updated_at: string
+          web_url: string
+        }
+        Insert: {
+          created_at?: string
+          download_url?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          modified_at?: string | null
+          onedrive_file_id: string
+          organization_id: string
+          parsed_client_name?: string | null
+          parsed_project_name?: string | null
+          project_id?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          web_url: string
+        }
+        Update: {
+          created_at?: string
+          download_url?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          modified_at?: string | null
+          onedrive_file_id?: string
+          organization_id?: string
+          parsed_client_name?: string | null
+          parsed_project_name?: string | null
+          project_id?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          web_url?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
