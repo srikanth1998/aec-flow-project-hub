@@ -19,8 +19,8 @@ export const ProjectProposal = ({ project }: ProjectProposalProps) => {
 
 
   const createWordProposal = async () => {
+    alert('Button clicked! Check console now...');
     console.log('🚀 Starting Word document creation...');
-    
     try {
       setSaving(true);
       console.log('📋 Project data:', project);
